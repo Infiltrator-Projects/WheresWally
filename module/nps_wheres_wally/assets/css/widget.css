@@ -1,0 +1,377 @@
+/**
+ * WHERE'S WALLY — NPS Event Monitor presentation layer.
+ *
+ * Copyright (C) 2026 Shannon Smith and Carlo Cunanan
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * The stylesheet is intentionally scoped beneath .nps-wally (and the Zabbix
+ * module wrapper) so it cannot alter unrelated dashboard widgets.
+ */
+
+/* Remove the standard widget-body padding so the monitor uses its full area. */
+div.dashboard-widget-nps_wheres_wally {
+    padding: 0;
+    overflow: hidden;
+}
+
+/* -------------------------------------------------------------------------
+ * Design tokens and principal layout
+ * ---------------------------------------------------------------------- */
+.nps-wally {
+    --nps-bg: #07101f;
+    --nps-panel: #0b172a;
+    --nps-toolbar: #091326;
+    --nps-line: #1d3147;
+    --nps-line-strong: #284159;
+    --nps-text: #c9deec;
+    --nps-muted: #6f8ca1;
+    --nps-cyan: #12d8d2;
+    --nps-green: #21d97a;
+    --nps-red: #ff525f;
+
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 260px;
+    background: var(--nps-bg);
+    color: var(--nps-text);
+    font-family: Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+}
+
+/* -------------------------------------------------------------------------
+ * Header, identity and controls
+ * ---------------------------------------------------------------------- */
+.nps-wally-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--nps-line);
+    background: var(--nps-toolbar);
+}
+
+.nps-wally-brand {
+    display: flex;
+    flex-direction: column;
+    min-width: 250px;
+}
+
+.nps-wally-title {
+    color: var(--nps-cyan);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: .04em;
+}
+
+.nps-wally-subtitle {
+    color: var(--nps-muted);
+    font-size: 10px;
+    font-style: italic;
+}
+
+.nps-wally-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+    min-width: 0;
+}
+
+.nps-wally-filter,
+.nps-wally-date {
+    height: 30px;
+    border: 1px solid #294258;
+    background: var(--nps-panel);
+    color: var(--nps-text);
+    padding: 4px 9px;
+    outline: none;
+}
+
+.nps-wally-filter {
+    width: min(330px, 28vw);
+}
+
+.nps-wally-date {
+    width: 132px;
+    color-scheme: dark;
+}
+
+.nps-wally-date-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--nps-muted);
+    white-space: nowrap;
+}
+
+.nps-wally-filter:focus,
+.nps-wally-date:focus {
+    border-color: var(--nps-cyan);
+    box-shadow: 0 0 0 1px rgba(18, 216, 210, .25);
+}
+
+.nps-wally-button,
+.nps-wally-details-button {
+    border: 1px solid #286078;
+    background: #0b2132;
+    color: var(--nps-cyan);
+    padding: 5px 10px;
+    cursor: pointer;
+    font: inherit;
+}
+
+.nps-wally-clear {
+    border-color: #80313b;
+    color: var(--nps-red);
+    background: #25151d;
+}
+
+.nps-wally-button:hover,
+.nps-wally-details-button:hover {
+    filter: brightness(1.25);
+}
+
+.nps-wally-button:focus-visible,
+.nps-wally-details-button:focus-visible,
+.nps-wally-filter:focus-visible,
+.nps-wally-date:focus-visible,
+.nps-wally-scroller:focus-visible {
+    outline: 2px solid var(--nps-cyan);
+    outline-offset: 1px;
+}
+
+.nps-wally-auto-label {
+    color: var(--nps-muted);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.nps-wally-live {
+    color: var(--nps-green);
+    font-weight: 700;
+    letter-spacing: .08em;
+}
+
+.nps-wally-live.is-search {
+    color: var(--nps-cyan);
+}
+
+.nps-wally-live.is-search::before {
+    background: var(--nps-cyan);
+    box-shadow: 0 0 8px rgba(18, 216, 210, .9);
+}
+
+.nps-wally-live::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 5px;
+    border-radius: 50%;
+    background: var(--nps-green);
+    box-shadow: 0 0 8px rgba(33, 217, 122, .9);
+}
+
+/* -------------------------------------------------------------------------
+ * Scroll container and event table
+ * ---------------------------------------------------------------------- */
+.nps-wally-scroller {
+    flex: 1 1 auto;
+    overflow: auto;
+    min-height: 0;
+}
+
+.nps-wally-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.nps-wally-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 6px 7px;
+    border-bottom: 1px solid var(--nps-line-strong);
+    background: var(--nps-panel);
+    color: #7ea1b7;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.nps-wally-table td {
+    padding: 4px 7px;
+    border-bottom: 1px solid rgba(42, 65, 87, .52);
+    color: var(--nps-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Detail rows are interleaved with primary rows, hence the 4n+1 selector. */
+.nps-wally-event-row:nth-child(4n+1) td {
+    background: rgba(15, 31, 50, .42);
+}
+
+.nps-wally-event-row:hover td {
+    background: rgba(22, 72, 91, .34);
+}
+
+/* Fixed widths preserve scanability while horizontal scrolling remains
+ * available on smaller dashboard regions. */
+.nps-wally-table th:nth-child(1),
+.nps-wally-table td:nth-child(1) { width: 54px; }
+.nps-wally-table th:nth-child(2),
+.nps-wally-table td:nth-child(2) { width: 142px; }
+.nps-wally-table th:nth-child(3),
+.nps-wally-table td:nth-child(3) { width: 150px; }
+.nps-wally-table th:nth-child(4),
+.nps-wally-table td:nth-child(4) { width: 68px; }
+.nps-wally-table th:nth-child(5),
+.nps-wally-table td:nth-child(5) { width: 150px; }
+.nps-wally-table th:nth-child(6),
+.nps-wally-table td:nth-child(6) { width: 142px; }
+.nps-wally-table th:nth-child(7),
+.nps-wally-table td:nth-child(7) { width: 132px; }
+.nps-wally-table th:nth-child(8),
+.nps-wally-table td:nth-child(8) { width: 142px; }
+.nps-wally-table th:nth-child(9),
+.nps-wally-table td:nth-child(9) { width: 112px; }
+.nps-wally-table th:nth-child(10),
+.nps-wally-table td:nth-child(10) { width: 102px; }
+.nps-wally-table th:nth-child(11),
+.nps-wally-table td:nth-child(11) { width: 70px; }
+
+/* -------------------------------------------------------------------------
+ * Result state and event details
+ * ---------------------------------------------------------------------- */
+.nps-wally-result {
+    display: block;
+    padding: 2px 7px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nps-wally-result.is-grant {
+    color: var(--nps-green);
+    background: rgba(33, 217, 122, .12);
+}
+
+.nps-wally-result.is-deny {
+    color: var(--nps-red);
+    background: rgba(255, 82, 95, .13);
+}
+
+.nps-wally-details-button {
+    width: 100%;
+    padding: 2px 4px;
+    border: 0;
+    background: transparent;
+    color: var(--nps-cyan);
+}
+
+.nps-wally-detail-row td {
+    padding: 0;
+    white-space: normal;
+    overflow: visible;
+    background: #080f1b;
+}
+
+.nps-wally-detail-content {
+    padding: 10px 12px 12px;
+    border-left: 3px solid var(--nps-cyan);
+}
+
+.nps-detail-pill {
+    display: inline-block;
+    margin: 0 7px 7px 0;
+    padding: 3px 6px;
+    border: 1px solid #294258;
+    color: #9fc1d5;
+    background: #0c1929;
+}
+
+.nps-detail-pill.is-deny,
+.nps-detail-reason {
+    color: var(--nps-red);
+    border-color: #74303b;
+}
+
+.nps-detail-reason {
+    display: block;
+    margin: 2px 0 8px;
+}
+
+.nps-wally-message {
+    margin: 0;
+    color: #b8cedc;
+    background: #060c16;
+    border: 1px solid var(--nps-line);
+    padding: 10px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 360px;
+    overflow: auto;
+}
+
+/* -------------------------------------------------------------------------
+ * Status, empty/error states and responsive behaviour
+ * ---------------------------------------------------------------------- */
+.nps-wally-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 9px;
+    border-top: 1px solid var(--nps-line);
+    color: var(--nps-muted);
+    background: var(--nps-toolbar);
+    font-size: 10px;
+}
+
+.nps-wally-source {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nps-wally-empty,
+.nps-wally-error {
+    padding: 24px;
+    color: #e0a3aa;
+    text-align: center;
+    background: #130e17;
+}
+
+.nps-wally-event-row[hidden],
+.nps-wally-detail-row[hidden] {
+    display: none;
+}
+
+@media (max-width: 1100px) {
+    .nps-wally-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .nps-wally-controls {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .nps-wally-filter,
+.nps-wally-date {
+        width: min(100%, 420px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nps-wally-button,
+    .nps-wally-details-button {
+        transition: none;
+    }
+}

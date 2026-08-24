@@ -1,0 +1,30 @@
+{
+  "manifest_version": 2.0,
+  "id": "nps_wheres_wally",
+  "type": "widget",
+  "name": "WHERE'S WALLY — NPS Event Monitor",
+  "namespace": "NpsWheresWally",
+  "version": "1.1.3",
+  "author": "Shannon Smith and Carlo Cunanan",
+  "description": "Live Microsoft NPS 6272/6273 event monitor with server-side retained-history search, date-range filtering, CSV export and expandable event details.",
+  "actions": {
+    "widget.nps_wheres_wally.view": {
+      "class": "WidgetView"
+    }
+  },
+  "widget": {
+    "size": {
+      "width": 72,
+      "height": 14
+    },
+    "js_class": "WidgetNpsWheresWally"
+  },
+  "assets": {
+    "css": [
+      "widget.css"
+    ],
+    "js": [
+      "class.widget.js"
+    ]
+  }
+}

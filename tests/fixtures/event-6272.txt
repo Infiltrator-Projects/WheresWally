@@ -1,0 +1,28 @@
+Network Policy Server granted access to a user.
+
+User:
+    Security ID:                    STAK\\3762
+    Account Name:                  3762
+    Account Domain:                STAK
+    Fully Qualified Account Name:  STAK.SAKYABRAM.CATHOLIC.EDU.AU/Domain Users/Students/Year 8 2026/Charli Hart
+
+Client Machine:
+    Security ID:                    NULL SID
+    Account Name:                  -
+    Fully Qualified Account Name:  -
+    Called Station Identifier:     BC-A9-93-E0-15-D2:St Augustine
+    Calling Station Identifier:    8C-1D-55-10-10-D2
+
+NAS:
+    NAS IPv4 Address:              10.129.29.211
+    NAS Identifier:                AP-OLD-STAFFROOM
+
+RADIUS Client:
+    Client Friendly Name:          Old-Staffroom
+    Client IP Address:             10.129.29.211
+
+Authentication Details:
+    Connection Request Policy Name: Secure Wireless
+    Network Policy Name:           Staff and Students Wireless
+    Authentication Type:           PEAP
+    EAP Type:                      Microsoft: Secured password (EAP-MSCHAP v2)

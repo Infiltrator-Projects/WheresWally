@@ -1,0 +1,30 @@
+Network Policy Server denied access to a user.
+
+User:
+    Security ID:                    STAK\\3076
+    Account Name:                  3076
+    Account Domain:                STAK
+    Fully Qualified Account Name:  STAK.SAKYABRAM.CATHOLIC.EDU.AU/Domain Users/Staff/Toby Mckiernan
+
+Client Machine:
+    Security ID:                    NULL SID
+    Account Name:                  -
+    Fully Qualified Account Name:  -
+    Called Station Identifier:     48-C0-93-80-11-22:StaffNet
+    Calling Station Identifier:    B0-6B-11-39-FB-09
+
+NAS:
+    NAS IPv4 Address:              10.129.29.199
+    NAS Identifier:                STAFFROOMNEW-OFFICE
+
+RADIUS Client:
+    Client Friendly Name:          staffroomnew-Office
+    Client IP Address:             -
+
+Authentication Details:
+    Connection Request Policy Name: Secure Wireless
+    Network Policy Name:           Staff Wireless
+    Authentication Type:           PEAP
+    EAP Type:                      Microsoft: Secured password (EAP-MSCHAP v2)
+    Reason Code:                   16
+    Reason:                        Authentication failed because of a user credentials mismatch.
