@@ -5,32 +5,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Normal live refresh is owned by Zabbix. Historical search is user-driven:
- * text/date criteria are submitted only when Enter is pressed and are added to
- * the ordinary widget update request. No keystroke timer or page reload is used.
- * Repeated dashboard refreshes are suppressed for an active historical query.
+ * text/receipt-date criteria are submitted only when Enter is pressed and are
+ * added to the ordinary widget update request.
  */
 class WidgetNpsWheresWally extends CWidget {
 
-    /** @type {string} Server-side retained-history search text. */
     _searchText = '';
-
-    /** @type {string} YYYY-MM-DD lower date boundary in browser local time. */
     _dateFrom = '';
-
-    /** @type {string} YYYY-MM-DD upper date boundary in browser local time. */
     _dateTo = '';
-
-    /** @type {boolean} Allow exactly the next active historical query to run. */
     _historicalUpdateRequested = false;
-
-    /**
-     * Highest Zabbix receipt key visible when Clear was pressed. Events at or
-     * below this value are hidden locally; no Zabbix history is deleted.
-     * @type {string}
-     */
     _clearedBefore = '';
-
-    /** @type {boolean} Whether each refresh returns the table to the newest row. */
     _autoScrollEnabled = true;
 
     onInitialize() {
@@ -44,35 +28,25 @@ class WidgetNpsWheresWally extends CWidget {
         this._autoScrollEnabled = true;
     }
 
-    /**
-     * Add transient search criteria to the standard Zabbix widget update body.
-     */
     getUpdateRequestData() {
         const data = super.getUpdateRequestData();
         const searchText = this._searchText.trim();
-        const timeFrom = this._dateToTimestamp(this._dateFrom, false);
-        const timeTill = this._dateToTimestamp(this._dateTo, true);
 
         if (searchText !== '') {
             data.search_text = searchText;
         }
 
-        if (timeFrom !== null) {
-            data.time_from = timeFrom;
+        if (this._dateFrom !== '') {
+            data.date_from = this._dateFrom;
         }
 
-        if (timeTill !== null) {
-            data.time_till = timeTill;
+        if (this._dateTo !== '') {
+            data.date_to = this._dateTo;
         }
 
         return data;
     }
 
-    /**
-     * Keep normal live mode on Zabbix's periodic refresh cycle. Once any search
-     * criterion is active, queries run only when the user changes that criterion.
-     * This avoids re-scanning a very large retained history every refresh period.
-     */
     promiseUpdate() {
         if (this._isHistoricalQueryActive()) {
             if (!this._historicalUpdateRequested) {
@@ -93,9 +67,6 @@ class WidgetNpsWheresWally extends CWidget {
         this._bindControls();
     }
 
-    /**
-     * Bind behaviour to the current widget DOM and restore transient state.
-     */
     _bindControls() {
         const root = this._body.querySelector('.nps-wally');
 
@@ -128,7 +99,6 @@ class WidgetNpsWheresWally extends CWidget {
                 return;
             }
 
-            // Enter runs an in-widget AJAX update only; never submit/reload the page.
             event.preventDefault();
             event.stopPropagation();
 
@@ -196,10 +166,6 @@ class WidgetNpsWheresWally extends CWidget {
         }
     }
 
-    /**
-     * Apply the browser-local Clear boundary. Text/date filtering is deliberately
-     * absent here because those operations now run against retained server history.
-     */
     _applyVisibilityRules(root) {
         let visibleCount = 0;
 
@@ -223,9 +189,6 @@ class WidgetNpsWheresWally extends CWidget {
         this._updateVisibleCount(root, visibleCount);
     }
 
-    /**
-     * Run one immediate widget update with the current search/date criteria.
-     */
     _requestHistoricalUpdate() {
         this._historicalUpdateRequested = true;
         this._clearedBefore = '';
@@ -237,24 +200,6 @@ class WidgetNpsWheresWally extends CWidget {
 
     _isHistoricalQueryActive() {
         return this._searchText.trim() !== '' || this._dateFrom !== '' || this._dateTo !== '';
-    }
-
-    /**
-     * Convert an HTML date input to an epoch timestamp in browser local time.
-     * The upper boundary represents the final second of the selected day.
-     */
-    _dateToTimestamp(value, endOfDay) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-            return null;
-        }
-
-        const [year, month, day] = value.split('-').map(Number);
-        const date = endOfDay
-            ? new Date(year, month - 1, day + 1, 0, 0, 0, 0)
-            : new Date(year, month - 1, day, 0, 0, 0, 0);
-        const timestamp = Math.floor(date.getTime() / 1000) - (endOfDay ? 1 : 0);
-
-        return Number.isFinite(timestamp) ? timestamp : null;
     }
 
     _toggleDetails(button) {
@@ -325,8 +270,18 @@ class WidgetNpsWheresWally extends CWidget {
         URL.revokeObjectURL(url);
     }
 
+    /**
+     * Quote a CSV field and neutralise spreadsheet formula prefixes.
+     *
+     * Event text can contain administrator-controlled or network-supplied data.
+     * Prefixing a leading formula marker with an apostrophe prevents Excel and
+     * similar spreadsheet software from evaluating the cell as a formula.
+     */
     _csvCell(value) {
-        return `"${String(value).replace(/"/g, '""')}"`;
+        const text = String(value);
+        const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+
+        return `"${safe.replace(/"/g, '""')}"`;
     }
 
     _updateVisibleCount(root, visibleCount) {

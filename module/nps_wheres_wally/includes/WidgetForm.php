@@ -10,24 +10,15 @@
 namespace Modules\NpsWheresWally\Includes;
 
 use Zabbix\Widgets\CWidgetForm;
+use Zabbix\Widgets\Fields\CWidgetFieldIntegerBox;
 use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectItem;
-use Zabbix\Widgets\Fields\CWidgetFieldNumericBox;
 
-/**
- * Defines the persistent configuration fields exposed by the dashboard editor.
- *
- * Design note:
- * The source item remains optional because the controller can locate the
- * canonical NPS log item automatically. Explicit selection is retained for
- * installations that use a different host name or item naming convention.
- */
 final class WidgetForm extends CWidgetForm {
 
+    public const MINIMUM_ROW_LIMIT = 10;
+    public const MAXIMUM_ROW_LIMIT = 200;
     public const DEFAULT_ROW_LIMIT = 200;
 
-    /**
-     * Add the widget-specific form fields to the Zabbix form model.
-     */
     public function addFields(): self {
         return $this
             ->addField(
@@ -37,8 +28,12 @@ final class WidgetForm extends CWidgetForm {
                 ))->setMultiple(false)
             )
             ->addField(
-                (new CWidgetFieldNumericBox('show_lines', _('Rows returned (10–200)')))
-                    ->setDefault(self::DEFAULT_ROW_LIMIT)
+                (new CWidgetFieldIntegerBox(
+                    'show_lines',
+                    _('Rows returned'),
+                    self::MINIMUM_ROW_LIMIT,
+                    self::MAXIMUM_ROW_LIMIT
+                ))->setDefault(self::DEFAULT_ROW_LIMIT)
             );
     }
 }

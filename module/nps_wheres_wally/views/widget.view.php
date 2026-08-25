@@ -31,21 +31,27 @@ $filter = (new CTag('input', false))
 
 $date_from = (new CTag('input', false))
     ->setAttribute('type', 'date')
-    ->setAttribute('aria-label', _('From date'))
-    ->setAttribute('title', _('Optional start date; press Enter to run retained-history search'))
+    ->setAttribute('aria-label', _('Received from date'))
+    ->setAttribute(
+        'title',
+        _('Optional Zabbix receipt-date start; press Enter to run retained-history search')
+    )
     ->addClass('nps-wally-date')
     ->addClass('nps-wally-date-from');
 
 $date_to = (new CTag('input', false))
     ->setAttribute('type', 'date')
-    ->setAttribute('aria-label', _('To date'))
-    ->setAttribute('title', _('Optional end date; press Enter to run retained-history search'))
+    ->setAttribute('aria-label', _('Received to date'))
+    ->setAttribute(
+        'title',
+        _('Optional Zabbix receipt-date end; press Enter to run retained-history search')
+    )
     ->addClass('nps-wally-date')
     ->addClass('nps-wally-date-to');
 
 $reset_search_button = (new CTag('button', true, _('Reset search')))
     ->setAttribute('type', 'button')
-    ->setAttribute('title', _('Clear search text and date range; return to live view'))
+    ->setAttribute('title', _('Clear search text and receipt-date range; return to live view'))
     ->addClass('nps-wally-button')
     ->addClass('nps-wally-search-reset');
 
@@ -74,8 +80,10 @@ $toolbar = (new CDiv([
     ]))->addClass('nps-wally-brand'),
     (new CDiv([
         $filter,
-        (new CTag('label', true, [_('From').' ', $date_from]))->addClass('nps-wally-date-label'),
-        (new CTag('label', true, [_('To').' ', $date_to]))->addClass('nps-wally-date-label'),
+        (new CTag('label', true, [_('Received from').' ', $date_from]))
+            ->addClass('nps-wally-date-label'),
+        (new CTag('label', true, [_('Received to').' ', $date_to]))
+            ->addClass('nps-wally-date-label'),
         $reset_search_button,
         $export_button,
         $clear_button,
@@ -87,7 +95,7 @@ $toolbar = (new CDiv([
             ->setAttribute(
                 'title',
                 $data['query_active']
-                    ? _('Server-side retained-history search; maximum 200 rows returned')
+                    ? _('Server-side retained-history search; date bounds use Zabbix receipt time; maximum 200 rows returned')
                     : _('Updated by the dashboard widget refresh interval')
             )
     ]))->addClass('nps-wally-controls')
@@ -158,6 +166,7 @@ foreach ($data['rows'] as $row) {
         ->setAttribute('data-received-key', (string) $row['received_key']);
 
     $summary_items = [
+        (new CSpan(_('Received').': '.(string) $row['received_time']))->addClass('nps-detail-pill'),
         (new CSpan(_('SSID').': '.(string) $row['ssid']))->addClass('nps-detail-pill'),
         (new CSpan(_('Network policy').': '.(string) $row['network_policy']))->addClass('nps-detail-pill'),
         (new CSpan(_('Connection policy').': '.(string) $row['connection_request_policy']))->addClass('nps-detail-pill'),

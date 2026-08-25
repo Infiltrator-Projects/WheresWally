@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.4 — 2026-08-25
+
+- Added mandatory server-side 6272/6273 filtering before the History API result limit.
+- Made date inputs explicit Zabbix receipt-date filters, matching `history.get` semantics.
+- Moved date-to-epoch conversion from browser JavaScript to PHP so boundaries use the active Zabbix frontend timezone.
+- Preserved the Windows source event timestamp as the primary event time and exposed Zabbix receipt time in Details.
+- Changed the row-limit configuration field to Zabbix's bounded integer field type (10–200).
+- Added CSV formula-prefix neutralisation for spreadsheet-safe exports.
+- Added independently testable History API query construction and client-side CSV regression coverage.
+- Added a native Debian/Ubuntu/Linux Mint `.deb` package builder.
+- Added GitHub Actions validation for tests and both installer formats.
+- Updated documentation for the unavoidable cost of unbounded free-text History API searches.
+
 ## 1.1.3 — 2026-08-19
 
 - Changed retained-history search submission to explicit Enter-key execution.

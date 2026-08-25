@@ -3,62 +3,63 @@
 **A native Zabbix 7.0 LTS dashboard widget for monitoring Microsoft Network Policy Server authentication events.**
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Release:** 1.1.3  
+**Release:** 1.1.4  
 **Platform:** Zabbix 7.0 LTS  
 **Type:** Zabbix dashboard widget/module  
 **Licence:** GNU General Public License v3.0 or later
 
-WHERE'S WALLY is designed specifically for Zabbix. It installs as a Zabbix frontend module and uses the Zabbix API and retained log history to monitor Microsoft NPS authentication events 6272 (granted) and 6273 (denied).
+WHERE'S WALLY is designed specifically for Zabbix. It installs as a Zabbix frontend module and uses the Zabbix History API to monitor Microsoft NPS authentication events 6272 (granted) and 6273 (denied).
 
-Version 1.1.3 provides bounded server-side search across retained Zabbix log history, optional date-range filtering, CSV export, expandable event details and explicit Enter-to-search behaviour while preserving the lightweight live view.
+Version 1.1.4 hardens retained-history operation: the server query always constrains results to NPS 6272/6273 before the 200-row limit is applied, receipt-date filtering is interpreted in the Zabbix frontend timezone, CSV export neutralises spreadsheet formula prefixes, and the row-count setting uses Zabbix's bounded integer field type.
 
-## Zabbix integration
+## Installation
 
-The production module lives in `module/nps_wheres_wally/` and is installed under the Zabbix module directory, normally:
+### Debian / Ubuntu / Linux Mint
 
-```text
-/usr/share/zabbix/modules/nps_wheres_wally
-```
-
-After installation, enable it from:
-
-```text
-Zabbix → Administration → General → Modules → Scan directory
-```
-
-The widget reads NPS event data through the Zabbix History API rather than connecting directly to the Zabbix database.
-
-## Repository layout
-
-```text
-module/nps_wheres_wally/   Production Zabbix widget module
-tests/                     Parser fixtures and regression harness
-tools/test.sh              Static and unit test runner
-tools/build-installer.sh   Self-extracting installer builder
-```
-
-The installed module includes operational and technical documentation under `module/nps_wheres_wally/docs`.
-
-## Validate the release
+Build the native Debian package:
 
 ```bash
-./tools/test.sh
+./tools/build-deb.sh
 ```
 
-## Build the automatic installer
+Install it with:
+
+```bash
+sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.4_all.deb
+```
+
+### Portable installer
+
+Build the self-extracting installer:
 
 ```bash
 ./tools/build-installer.sh
 ```
 
-The resulting installer is written to:
+Run the resulting `dist/nps-wheres-wally-zabbix-1.1.4.run` as root.
+
+Both installers place the widget under the Zabbix module directory, normally:
 
 ```text
-dist/nps-wheres-wally-zabbix-1.1.3.run
+/usr/share/zabbix/modules/nps_wheres_wally
 ```
 
-## Release behaviour
+Then open **Zabbix → Administration → General → Modules → Scan directory**, enable WHERE'S WALLY, and refresh the browser.
 
-With search and date fields blank, the widget shows the newest configured events. Historical searches are executed server-side through the Zabbix History API and return at most 200 rows. Search and date fields execute on Enter rather than querying while the operator is typing.
+## Search behaviour
 
-See `module/nps_wheres_wally/README.md` for full functional documentation.
+Blank search/date fields show the newest configured events. Free-text searches execute server-side through `history.get` and return at most 200 matching rows.
+
+The **Received from** and **Received to** controls deliberately filter on Zabbix receipt time because `history.get` defines `time_from` and `time_till` on the receipt clock. The primary **Time** column remains the original Windows event timestamp when supplied by the event log; Zabbix receipt time is shown in Details.
+
+Exact searches for `6272`, `grant`, `granted`, `6273`, `deny`, or `denied` are converted to exact event-ID filters instead of text scans.
+
+Free-text search uses Zabbix's case-insensitive History API search against the retained event message. On extremely large retention sets, adding a receipt-date range is recommended to reduce database work.
+
+## Validation
+
+```bash
+./tools/test.sh
+```
+
+The suite checks PHP and JavaScript syntax, parser behaviour, History API query construction, CSV formula neutralisation, installer scripts and—where `dpkg-deb` is available—the Debian package build.

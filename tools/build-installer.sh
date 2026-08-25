@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Build the self-extracting WHERE'S WALLY 1.1.3 installer.
+# Build the self-extracting WHERE'S WALLY 1.1.4 installer.
 set -Eeuo pipefail
 
 readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly MODULE_PARENT="$PROJECT_ROOT/module"
-readonly VERSION="1.1.3"
+readonly VERSION="1.1.4"
 readonly OUTPUT_DIR="${1:-$PROJECT_ROOT/dist}"
 readonly OUTPUT_FILE="$OUTPUT_DIR/nps-wheres-wally-zabbix-${VERSION}.run"
 readonly PAYLOAD_FILE="$(mktemp)"
@@ -21,14 +21,13 @@ cat > "$OUTPUT_FILE" <<'INSTALLER'
 # WHERE'S WALLY — NPS Event Monitor installer
 # Authors: Shannon Smith and Carlo Cunanan
 #
-# This installer is intentionally compatible with Zabbix appliances that use
-# PHP-FPM without installing the PHP command-line executable.
+# Compatible with Zabbix appliances that use PHP-FPM without PHP CLI.
 
 set -Eeuo pipefail
 
 readonly MODULE_ROOT="${ZABBIX_MODULE_ROOT:-/usr/share/zabbix/modules}"
 readonly MODULE_NAME="nps_wheres_wally"
-readonly MODULE_VERSION="1.1.3"
+readonly MODULE_VERSION="1.1.4"
 readonly MODULE_AUTHOR="Shannon Smith and Carlo Cunanan"
 readonly PAYLOAD_MARKER="__NPS_WALLY_PAYLOAD_BELOW__"
 readonly SELF="$0"
@@ -65,8 +64,6 @@ trap cleanup EXIT
 [[ ${EUID:-$(id -u)} -eq 0 ]] || fail 'Run this installer as root.'
 [[ -d "$MODULE_ROOT" ]] || fail "Zabbix module directory not found: $MODULE_ROOT"
 
-# Limit mandatory dependencies to ordinary base-system utilities. PHP CLI is
-# optional because the Zabbix frontend may be served entirely by PHP-FPM.
 for command in awk tail tar find grep mktemp chown chmod mv date; do
     command -v "$command" >/dev/null 2>&1 || fail "Required command not found: $command"
 done
@@ -83,19 +80,13 @@ manifest="$candidate/manifest.json"
 [[ -d "$candidate" ]] || fail 'Payload does not contain the expected module directory.'
 [[ -f "$manifest" ]] || fail 'Payload does not contain manifest.json.'
 
-# Validate the immutable module identity without depending on a JSON runtime.
-# The release manifest is generated in a stable, one-property-per-line form;
-# anchored expressions prevent partial or misleading matches.
 grep -Eq '^[[:space:]]*"id"[[:space:]]*:[[:space:]]*"nps_wheres_wally"[[:space:]]*,?[[:space:]]*$' "$manifest" \
     || fail 'Invalid manifest id.'
-grep -Eq '^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"1\.1\.3"[[:space:]]*,?[[:space:]]*$' "$manifest" \
+grep -Eq '^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"1\.1\.4"[[:space:]]*,?[[:space:]]*$' "$manifest" \
     || fail 'Invalid manifest version.'
 grep -Eq '^[[:space:]]*"author"[[:space:]]*:[[:space:]]*"Shannon Smith and Carlo Cunanan"[[:space:]]*,?[[:space:]]*$' "$manifest" \
     || fail 'Invalid manifest author.'
 
-# PHP syntax validation is valuable when available, but it must not make PHP
-# CLI a production dependency. Full syntax and regression checks are executed
-# during the release build regardless of this optional appliance-side check.
 if command -v php >/dev/null 2>&1; then
     while IFS= read -r -d '' php_file; do
         php -l "$php_file" >/dev/null
@@ -106,7 +97,7 @@ else
 fi
 
 chown -R root:root "$candidate"
-find "$candidate" -type d -exec chmod 755 {} +
+find "$candidate" -type d -exec chmod 755 {} + -exec chmod a-s {} +
 find "$candidate" -type f -exec chmod 644 {} +
 
 if [[ -d "$MODULE_ROOT/$MODULE_NAME" ]]; then

@@ -1,6 +1,6 @@
 # Data dictionary
 
-| Display column | Primary source | Fallback or transformation |
+| Display field | Primary source | Fallback or transformation |
 |---|---|---|
 | Event | Zabbix `logeventid` | Only 6272 and 6273 are accepted |
 | Time | Windows event timestamp | Zabbix receipt time when unavailable |
@@ -12,6 +12,7 @@
 | Device MAC | `Calling Station Identifier` | Blank when absent |
 | IP address | `Client IP Address` | `NAS IPv4 Address` |
 | Result | Event 6272 or 6273 | 6272 = Grant; 6273 = Deny |
+| Details: Received | Zabbix history `clock` | Formatted in the active Zabbix frontend timezone |
 | Details: SSID | Suffix of `Called Station Identifier` | Blank when absent |
 | Details: Network policy | `Network Policy Name` | Blank when absent |
 | Details: Connection policy | `Connection Request Policy Name` | Blank when absent |
@@ -20,6 +21,10 @@
 | Details: Reason code | `Reason Code` | Applicable mainly to event 6273 |
 | Details: Reason | `Reason` | Blank when absent |
 | Details: raw message | Zabbix history `value` | Line endings normalised to LF |
+
+## Time semantics
+
+The primary **Time** value represents the Windows source event timestamp when the event log supplied one. The **Received** value is the Zabbix history receipt clock. Historical **Received from/Received to** filtering uses the receipt clock because that is the time domain supported by `history.get` date bounds.
 
 ## Duplicate labels
 
