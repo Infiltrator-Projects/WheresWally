@@ -226,7 +226,7 @@ final class WidgetView extends CControllerDashboardWidgetView {
             // The strongest inexpensive case is agreement between the event IP
             // and a MAC explicitly stored on that current Zabbix host.
             if ($ip_host !== null && $bssid !== ''
-                    && AccessPointIdentity::hwstHasMac($ip_host, $bssid)) {
+                    && AccessPointIdentity::hostHasMac($ip_host, $bssid)) {
                 $matched_host = $ip_host;
             }
             else {
@@ -241,7 +241,7 @@ final class WidgetView extends CControllerDashboardWidgetView {
                 );
 
                 if ($needs_mac_search && !array_key_exists($bssid, $hosts_by_mac)
-                        && $mac_lookups < self::MAXIMUM_MAD_FALLBACK_LOOKUPS) {
+                        && $mac_lookups < self::MAXIMUM_MAC_FALLBACK_LOOKUPS) {
                     $hosts_by_mac[$bssid] = $this->findHostByInventoryMac($bssid);
                     $mac_lookups++;
                 }

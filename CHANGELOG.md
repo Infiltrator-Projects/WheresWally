@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.8 — 2026-08-25
+
+- Fixed two v1.1.7 runtime symbol typos that caused the Zabbix widget request to fail and remain on the loading spinner.
+- Corrected `AccessPointIdentity::hwstHasMac()` to `AccessPointIdentity::hostHasMac()`.
+- Corrected `MAXIMUM_MAD_FALLBACK_LOOKUPS` to `MAXIMUM_MAC_FALLBACK_LOOKUPS`.
+- Added a source-contract regression test that verifies every `AccessPointIdentity::method()` reference exists and every `self::CONSTANT` used by `WidgetView` is declared.
+- Kept the v1.1.7 AP-correlation design unchanged: exact inventory MAC first, exact current interface IP as fallback, and no approximate MAC guessing.
+
 ## 1.1.7 — 2026-08-25
 
 - Fixed stale AP/location identity caused by presenting NPS `Client Friendly Name` as current location.

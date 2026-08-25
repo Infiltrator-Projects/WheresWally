@@ -20,7 +20,7 @@ readonly VERSION="$(jq -r '.version // empty' "$MANIFEST")"
     exit 1
 }
 
-printf '[1/12] Validating manifest identity and release version (%s)\n' "$VERSION"
+printf '[1/13] Validating manifest identity and release version (%s)\n' "$VERSION"
 jq -e --arg author "$EXPECTED_AUTHOR" '
     .id == "nps_wheres_wally"
     and .type == "widget"
@@ -33,36 +33,39 @@ grep -Fq "**Version:** $VERSION" "$MODULE_ROOT/README.md"
 grep -Fq "## $VERSION —" "$PROJECT_ROOT/CHANGELOG.md"
 grep -Fq "## $VERSION —" "$MODULE_ROOT/CHANGELOG.md"
 
-echo '[2/12] Checking PHP syntax'
+echo '[2/13] Checking PHP syntax'
 while IFS= read -r -d '' file; do
     php -l "$file" >/dev/null
 done < <(find "$MODULE_ROOT" "$PROJECT_ROOT/tests" -type f -name '*.php' -print0)
 
-echo '[3/12] Checking JavaScript syntax'
+echo '[3/13] Checking JavaScript syntax'
 node --check "$MODULE_ROOT/assets/js/class.widget.js"
 node --check "$PROJECT_ROOT/tests/WidgetClientTest.js"
 
-echo '[4/12] Running parser regression tests'
+echo '[4/13] Running parser regression tests'
 php "$PROJECT_ROOT/tests/NpsEventParserTest.php"
 
-echo '[5/12] Running access-point identity regression tests'
+echo '[5/13] Running access-point identity regression tests'
 php "$PROJECT_ROOT/tests/AccessPointIdentityTest.php"
 
-echo '[6/12] Running History API query regression tests'
+echo '[6/13] Running WidgetView source-contract regression tests'
+php "$PROJECT_ROOT/tests/WidgetViewSourceContractTest.php"
+
+echo '[7/13] Running History API query regression tests'
 php "$PROJECT_ROOT/tests/HistoryQueryBuilderTest.php"
 
-echo '[7/12] Running receipt-date/timezone regression tests'
+echo '[8/13] Running receipt-date/timezone regression tests'
 php "$PROJECT_ROOT/tests/ReceiptDateRangeTest.php"
 
-echo '[8/12] Running client live/hold/export regression tests'
+echo '[9/13] Running client live/hold/export regression tests'
 node "$PROJECT_ROOT/tests/WidgetClientTest.js"
 
-echo '[9/12] Checking installer/build script syntax'
+echo '[10/13] Checking installer/build script syntax'
 while IFS= read -r -d '' file; do
     bash -n "$file"
 done < <(find "$PROJECT_ROOT/tools" -type f -name '*.sh' -print0)
 
-echo '[10/12] Building portable installer'
+echo '[11/13] Building portable installer'
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 "$PROJECT_ROOT/tools/build-installer.sh" "$tmp" >/dev/null
@@ -70,7 +73,7 @@ run_file="$tmp/nps-wheres-wally-zabbix-${VERSION}.run"
 [[ -x "$run_file" ]]
 grep -aFq "# Version: $VERSION" "$run_file"
 
-echo '[11/12] Building and inspecting Debian package'
+echo '[12/13] Building and inspecting Debian package'
 if command -v dpkg-deb >/dev/null 2>&1; then
     "$PROJECT_ROOT/tools/build-deb.sh" "$tmp" >/dev/null
     deb="$tmp/nps-wheres-wally-zabbix_${VERSION}_all.deb"
@@ -89,7 +92,7 @@ else
     echo 'dpkg-deb not installed; Debian package build check skipped.'
 fi
 
-echo '[12/12] Checking for release-version drift in build logic'
+echo '[13/13] Checking for release-version drift in build logic'
 if grep -R -F "$VERSION" "$PROJECT_ROOT/tools" "$PROJECT_ROOT/.github" >/dev/null; then
     printf 'ERROR: current release version is hard-coded in tools or CI.\n' >&2
     grep -R -n -F "$VERSION" "$PROJECT_ROOT/tools" "$PROJECT_ROOT/.github" >&2 || true
