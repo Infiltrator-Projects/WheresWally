@@ -10,14 +10,26 @@
 namespace Modules\NpsWheresWally\Includes;
 
 /**
- * Converts YYYY-MM-DD controls into inclusive Zabbix receipt-time boundaries.
+ * Convert date-only controls into inclusive Zabbix receipt-time boundaries.
  *
- * The timezone is supplied by the caller so tests can verify DST behaviour and
- * the production controller can use Zabbix's active frontend timezone.
+ * Why this helper exists
+ * ----------------------
+ * HTML date inputs contain calendar dates but no timezone. Zabbix `history.get`
+ * accepts Unix timestamps and interprets them against the receipt clock. The
+ * caller therefore supplies the active frontend timezone and this class owns all
+ * calendar-to-epoch conversion, including daylight-saving transitions.
+ *
+ * End-of-day is calculated as "next local midnight minus one second" rather than
+ * by adding 86,399 seconds. That distinction is essential on 23-hour and 25-hour
+ * DST transition days.
  */
 final class ReceiptDateRange {
 
     /**
+     * Invalid or blank controls are normalised to an empty string/null boundary.
+     * If both dates are valid but reversed, they are swapped for operator-friendly
+     * behaviour instead of silently returning an empty result set.
+     *
      * @return array{date_from: string, date_to: string, time_from: ?int, time_till: ?int}
      */
     public function parse(string $date_from, string $date_to, \DateTimeZone $timezone): array {
@@ -36,6 +48,11 @@ final class ReceiptDateRange {
         ];
     }
 
+    /**
+     * Accept only a real Gregorian date in the browser's canonical YYYY-MM-DD
+     * form. `createFromFormat()` alone can normalise impossible dates, so warning
+     * counts and a round-trip format comparison are both required.
+     */
     private function normaliseDate(string $value, \DateTimeZone $timezone): string {
         $value = trim($value);
 
@@ -56,6 +73,7 @@ final class ReceiptDateRange {
         return $value;
     }
 
+    /** Return the first or last receipt second belonging to one local date. */
     private function boundary(string $value, bool $end_of_day, \DateTimeZone $timezone): ?int {
         if ($value === '') {
             return null;

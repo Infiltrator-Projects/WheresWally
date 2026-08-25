@@ -3,14 +3,14 @@
 **A native Zabbix 7.0 LTS dashboard widget for monitoring Microsoft Network Policy Server authentication events.**
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Release:** 1.1.5  
+**Release:** 1.1.6  
 **Platform:** Zabbix 7.0 LTS  
 **Type:** Zabbix dashboard widget/module  
 **Licence:** GNU General Public License v3.0 or later
 
 WHERE'S WALLY is designed specifically for Zabbix. It installs as a Zabbix frontend module and uses the Zabbix History API to monitor Microsoft NPS authentication events 6272 (granted) and 6273 (denied).
 
-Version 1.1.5 restores the intended live-console behaviour: Auto-scroll ON performs a one-second near-live poll and follows the newest events, while Auto-scroll OFF holds the current event list in place. Retained-history search remains explicit and server-side.
+Version 1.1.6 completes a forensic code and interface pass. Auto-scroll ON remains the one-second live feed and Auto-scroll OFF remains a true hold, while the widget now avoids duplicate native Zabbix refresh scheduling, skips one-second live requests in hidden browser tabs, exposes an explicit Search button, and presents clearer LIVE / HOLD / SEARCH state, event counts and last-refresh feedback.
 
 ## Installation
 
@@ -25,7 +25,7 @@ Build the native Debian package:
 Install it with:
 
 ```bash
-sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.5_all.deb
+sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.6_all.deb
 ```
 
 ### Portable installer
@@ -36,7 +36,7 @@ Build the self-extracting installer:
 ./tools/build-installer.sh
 ```
 
-Run the resulting `dist/nps-wheres-wally-zabbix-1.1.5.run` as root.
+Run the resulting `dist/nps-wheres-wally-zabbix-1.1.6.run` as root.
 
 Both installers place the widget under the Zabbix module directory, normally:
 
@@ -53,7 +53,7 @@ With search and receipt-date fields blank, **Auto-scroll** is the live-feed swit
 - checked: the widget checks Zabbix for new NPS events every second and keeps the newest rows in view;
 - unchecked: the current display is held in place and periodic refreshes do not replace it.
 
-Historical searches are always user-driven. Press Enter to execute or refresh a retained-history search.
+Historical searches are always user-driven. Press Enter or use the **Search** button to execute or refresh a retained-history search.
 
 ## Search behaviour
 
@@ -71,4 +71,4 @@ Free-text search uses Zabbix's case-insensitive History API search against the r
 ./tools/test.sh
 ```
 
-The suite checks PHP and JavaScript syntax, parser behaviour, History API query construction, CSV formula neutralisation, installer scripts and—where `dpkg-deb` is available—the Debian package build.
+The suite checks PHP and JavaScript syntax, parser behaviour, History API query construction, timezone/DST boundaries, live/hold request gating, CSV formula neutralisation, packaging metadata and both installer build paths.

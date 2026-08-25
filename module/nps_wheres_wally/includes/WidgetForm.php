@@ -13,12 +13,20 @@ use Zabbix\Widgets\CWidgetForm;
 use Zabbix\Widgets\Fields\CWidgetFieldIntegerBox;
 use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectItem;
 
+/**
+ * Define the small amount of state that belongs in the saved Zabbix dashboard.
+ *
+ * Search text, receipt dates, live/hold state and Clear state are intentionally
+ * transient browser concerns and are therefore not persisted here. Only source
+ * selection and the bounded row count survive dashboard reloads.
+ */
 final class WidgetForm extends CWidgetForm {
 
     public const MINIMUM_ROW_LIMIT = 10;
     public const MAXIMUM_ROW_LIMIT = 200;
     public const DEFAULT_ROW_LIMIT = 200;
 
+    /** Register persistent widget fields using native Zabbix field types. */
     public function addFields(): self {
         return $this
             ->addField(

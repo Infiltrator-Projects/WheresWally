@@ -32,4 +32,10 @@ sameDate('Invalid to boundary is null.', $invalid['time_till'], null);
 $dst = $parser->parse('2026-10-04', '2026-10-04', $melbourne);
 sameDate('DST-start day uses timezone-aware 23-hour boundary.', $dst['time_till'] - $dst['time_from'], 82799);
 
+
+// Melbourne leaves daylight saving on 5 April 2026. The local calendar day is
+// therefore 25 hours long and must not be collapsed to a fixed 86400 seconds.
+$dst_end = $parser->parse('2026-04-05', '2026-04-05', $melbourne);
+sameDate('DST-end day uses timezone-aware 25-hour boundary.', $dst_end['time_till'] - $dst_end['time_from'], 89999);
+
 fwrite(STDOUT, "ReceiptDateRangeTest: all assertions passed.\n");

@@ -10,49 +10,57 @@
 namespace Modules\NpsWheresWally\Includes;
 
 /**
- * Converts the human-readable Windows Security event message produced for NPS
- * events 6272 and 6273 into a stable, presentation-neutral data structure.
+ * Convert Windows NPS Security events 6272/6273 into a stable row model.
  *
- * Architectural rationale
- * -----------------------
- * Zabbix stores a Windows event-log record as a log history value. The value is
- * a formatted message rather than a structured JSON document, so the widget
- * must recover individual fields from labelled lines. Keeping that process in
- * a dedicated class gives the controller one responsibility: acquiring data.
- * It also makes the parsing rules independently testable without a running
- * Zabbix frontend.
+ * Why this parser exists
+ * ----------------------
+ * Zabbix stores a Windows event-log entry as a log-history value containing the
+ * human-readable Windows message. The message is not structured JSON, and NPS
+ * repeats some labels in different sections. Parsing therefore needs explicit
+ * precedence rules rather than an ad-hoc collection of string searches in the
+ * controller or view.
  *
- * Scope and assumptions
- * ---------------------
- * - Event 6272 represents granted network access.
- * - Event 6273 represents denied network access.
- * - The parser targets the English labels emitted by Windows Server. Localised
- *   Windows installations require a translated label map or XML-based source.
- * - A missing field is represented by an empty string, never by a fabricated
- *   value. This preserves evidentiary integrity in administrative reporting.
+ * Integrity rules
+ * ---------------
+ * - Only event IDs 6272 (Grant) and 6273 (Deny) are accepted.
+ * - Missing fields become an empty string; the parser never fabricates values.
+ * - The first Account Name/Domain/FQAN occurrence is the authenticating user.
+ *   Later repetitions normally describe the client computer and must not
+ *   overwrite the user identity shown in the primary table.
+ * - Unknown Called-Station-Identifier formats are preserved verbatim instead of
+ *   being discarded merely because they do not match the common BSSID:SSID form.
+ * - The raw normalised message is retained for Details/evidence inspection.
+ *
+ * Search is intentionally absent here. Retained-history search is performed by
+ * Zabbix's History API before rows reach this parser, so constructing a second
+ * parser-side search string would be dead data and could drift from API search
+ * semantics.
  */
 final class NpsEventParser {
 
     public const EVENT_GRANTED = 6272;
     public const EVENT_DENIED = 6273;
 
+    /** Windows uses a single hyphen for many unavailable NPS values. */
     private const EMPTY_FIELD_MARKER = '-';
 
-    /**
-     * Return whether the parser recognises the supplied Windows Event ID.
-     */
+    /** Return whether this parser owns the supplied Windows Security Event ID. */
     public function supportsEventId(int $event_id): bool {
         return $event_id === self::EVENT_GRANTED || $event_id === self::EVENT_DENIED;
     }
 
     /**
-     * Parse one Zabbix log-history entry.
+     * Parse one Zabbix log-history row.
      *
-     * @param array<string, mixed> $entry    Zabbix history row.
-     * @param int                  $event_id Windows Event ID from logeventid.
+     * The returned structure is presentation-neutral. The controller adds
+     * formatted display times because date formatting belongs to the active
+     * Zabbix frontend timezone, not to the parser.
      *
-     * @return array<string, int|string> Normalised event fields suitable for
-     *                                   rendering, filtering and CSV export.
+     * @param array<string, mixed> $entry    Zabbix log-history row.
+     * @param int                  $event_id Windows Event ID from `logeventid`.
+     *
+     * @return array<string, int|string> Normalised event fields for rendering,
+     *                                   Details and CSV export.
      */
     public function parse(array $entry, int $event_id): array {
         if (!$this->supportsEventId($event_id)) {
@@ -64,13 +72,15 @@ final class NpsEventParser {
 
         $message = $this->normaliseLineEndings($this->stringValue($entry, 'value'));
 
-        // The first Account Name/Domain/FQAN group belongs to the User section.
-        // Later repetitions belong to the client computer and must not replace
-        // the authenticating user identity shown in the primary table.
+        // These labels repeat later in a typical NPS message. `extractField()`
+        // deliberately returns the first complete-line match, which belongs to
+        // the User section and therefore represents the authenticating account.
         $account = $this->extractField($message, 'Account Name');
         $domain = $this->extractField($message, 'Account Domain');
         $qualified_account = $this->extractField($message, 'Fully Qualified Account Name');
 
+        // Network/client identity has deployment-dependent fallbacks. Preserve
+        // each raw field first; precedence is applied explicitly below.
         $called_station = $this->extractField($message, 'Called Station Identifier');
         $calling_station = $this->extractField($message, 'Calling Station Identifier');
         $client_name = $this->extractField($message, 'Client Friendly Name');
@@ -78,6 +88,8 @@ final class NpsEventParser {
         $nas_ip = $this->extractField($message, 'NAS IPv4 Address');
         $nas_identifier = $this->extractField($message, 'NAS Identifier');
 
+        // Policy/result metadata is retained even when not shown in the compact
+        // primary row because it is valuable in the expanded Details panel.
         $reason_code = $this->extractField($message, 'Reason Code');
         $reason = $this->extractField($message, 'Reason');
         $network_policy = $this->extractField($message, 'Network Policy Name');
@@ -92,30 +104,10 @@ final class NpsEventParser {
         $ip_address = $this->firstNonEmpty([$client_ip, $nas_ip]);
         $status = $event_id === self::EVENT_GRANTED ? 'Grant' : 'Deny';
         $status_long = $this->formatStatus($status, $reason_code);
-        $event_clock = $this->eventClock($entry);
-
-        $search_text = implode(' ', [
-            (string) $event_id,
-            $account,
-            $domain,
-            $person,
-            $access_point,
-            $ssid,
-            $location,
-            $calling_station,
-            $ip_address,
-            $status,
-            $reason_code,
-            $reason,
-            $network_policy,
-            $connection_request_policy,
-            $authentication_type,
-            $eap_type
-        ]);
 
         return [
             'event_id' => $event_id,
-            'event_clock' => $event_clock,
+            'event_clock' => $this->eventClock($entry),
             'account' => $account,
             'domain' => $domain,
             'person' => $person,
@@ -133,7 +125,6 @@ final class NpsEventParser {
             'authentication_type' => $authentication_type,
             'eap_type' => $eap_type,
             'message' => $message,
-            'search' => $this->lowercase($search_text),
             'received_key' => $this->receivedKey($entry)
         ];
     }
@@ -141,12 +132,12 @@ final class NpsEventParser {
     /**
      * Extract the first value associated with an exact event-message label.
      *
-     * The expression is anchored to a complete line so a short label cannot
-     * accidentally match a longer label. preg_quote() prevents punctuation in
-     * future label names from changing the regular-expression semantics.
+     * Anchoring to a complete line prevents short labels from matching text in a
+     * longer label. `preg_quote()` also keeps future punctuation in label names
+     * from changing the regular-expression meaning.
      */
     private function extractField(string $message, string $label): string {
-        $pattern = '/^[\\t ]*'.preg_quote($label, '/').'[\\t ]*:[\\t ]*(.*?)[\\t ]*$/mi';
+        $pattern = '/^[\t ]*'.preg_quote($label, '/').'[\t ]*:[\t ]*(.*?)[\t ]*$/mi';
 
         if (preg_match($pattern, $message, $matches) !== 1) {
             return '';
@@ -158,12 +149,11 @@ final class NpsEventParser {
     }
 
     /**
-     * Split the Called-Station-Identifier into access-point BSSID and suffix.
+     * Split the common Called-Station-Identifier `BSSID:SSID` representation.
      *
-     * Microsoft NPS commonly receives values such as:
-     *     BC-A9-93-E0-15-D2:St Augustine
-     * The suffix is conventionally the SSID. When a vendor sends another
-     * format, the full value is retained rather than silently discarded.
+     * A vendor may emit another format. In that case the complete source value
+     * remains the access-point field and SSID is left blank; silently throwing
+     * away an unfamiliar identifier would make troubleshooting harder.
      *
      * @return array{0: string, 1: string}
      */
@@ -185,11 +175,11 @@ final class NpsEventParser {
     }
 
     /**
-     * Derive the display name from the final distinguished-name component.
+     * Derive a friendly person value from NPS's qualified-account representation.
      *
-     * The FQAN emitted by NPS may use either slash or backslash separators.
-     * When no meaningful final component is available, the account identifier
-     * is retained as the truthful fallback.
+     * NPS commonly supplies `DOMAIN\\account` (and some sources use `/`). If the
+     * final component is empty or merely repeats Account Name, the ordinary
+     * account value is the truthful and least surprising fallback.
      */
     private function personFromQualifiedName(string $qualified_name, string $fallback): string {
         if ($qualified_name === '') {
@@ -207,9 +197,7 @@ final class NpsEventParser {
     }
 
     /**
-     * Select the first non-empty value according to an explicit precedence
-     * order. This is used where NPS deployments expose equivalent information
-     * through different vendor-dependent fields.
+     * Return the first populated candidate from an explicit precedence order.
      *
      * @param list<string> $values
      */
@@ -224,8 +212,11 @@ final class NpsEventParser {
     }
 
     /**
-     * Prefer the source event timestamp supplied by the Windows event-log item.
-     * Fall back to Zabbix's receipt time when the source timestamp is absent.
+     * Prefer the Windows source timestamp and fall back to Zabbix receipt time.
+     *
+     * The two clocks are intentionally kept distinct: source time answers when
+     * Windows says the authentication occurred; receipt time answers when Zabbix
+     * stored it and is the clock used by `history.get` date bounds.
      *
      * @param array<string, mixed> $entry
      */
@@ -238,9 +229,10 @@ final class NpsEventParser {
     }
 
     /**
-     * Construct a lexicographically sortable identity from Zabbix clock and
-     * nanosecond values. JavaScript uses this key to implement non-destructive
-     * "Clear" behaviour without deleting monitoring history.
+     * Build a lexicographically sortable receipt identity from clock+nanoseconds.
+     *
+     * JavaScript uses this fixed-width key only for non-destructive Clear state.
+     * It is not a database key and is never written back to Zabbix.
      *
      * @param array<string, mixed> $entry
      */
@@ -252,6 +244,7 @@ final class NpsEventParser {
         );
     }
 
+    /** Add the NPS reason code to Deny rows without inventing a Grant reason. */
     private function formatStatus(string $status, string $reason_code): string {
         if ($status === 'Deny' && $reason_code !== '') {
             return sprintf('%s (%s)', $status, $reason_code);
@@ -260,24 +253,14 @@ final class NpsEventParser {
         return $status;
     }
 
-    /**
-     * Lowercase search text using multibyte support when the PHP extension is
-     * available, while retaining compatibility with a minimal PHP CLI used by
-     * the standalone test harness.
-     */
-    private function lowercase(string $value): string {
-        return function_exists('mb_strtolower')
-            ? \mb_strtolower($value)
-            : strtolower($value);
-    }
-
+    /** Normalise Windows CRLF/CR input once so all later parsing sees LF lines. */
     private function normaliseLineEndings(string $message): string {
         return str_replace(["\r\n", "\r"], "\n", $message);
     }
 
     /**
-     * Read a scalar entry value without generating PHP notices for malformed
-     * history rows.
+     * Read a scalar history value defensively without emitting PHP notices for a
+     * malformed or future API row shape.
      *
      * @param array<string, mixed> $entry
      */

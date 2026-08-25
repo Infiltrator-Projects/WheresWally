@@ -19,17 +19,17 @@ Useful exact searches:
 
 Other text searches match the raw NPS event message, which contains the account, name/FQAN, access-point identifiers, MAC address, IP address, policies and authentication details used to build the displayed columns. On very large retention sets, use a receipt-date range to reduce database work.
 
-While SEARCH mode is active, the historical query is not repeated on every dashboard refresh. Change the search text/date and press Enter to run another query, or choose **Reset search** to return to live mode.
+While SEARCH mode is active, the historical query is not repeated on every dashboard refresh. Change the search text/date and press Enter or choose **Search** to run another query, or choose **Reset** to return to live/hold mode.
 
 ## Other toolbar controls
 
 **Export** downloads the currently displayed rows as UTF-8 CSV. Formula-like leading characters are neutralised so spreadsheet applications do not evaluate event data as formulas.
 
-**Clear** hides the currently displayed rows in that browser instance; it never deletes monitoring history.
+**Clear view** hides the currently displayed rows in that browser instance; it never deletes monitoring history.
 
-**Auto-scroll** is the live/hold switch. Checked = one-second near-live updates and follow the newest row. Unchecked = hold the current rows in place without periodic replacement.
+**Auto-scroll** is the live/hold switch. Checked = one-second live updates and follow the newest row. Unchecked = HOLD the current rows in place without periodic replacement. Hidden browser tabs skip one-second live requests and refresh again after the tab becomes visible.
 
-**Details** expands the raw event and parsed authentication metadata, including Zabbix receipt time.
+**Details** expands the raw event and parsed authentication metadata, including Zabbix receipt time. The footer also shows visible event, Grant and Deny counts plus the browser-local time of the last successful render.
 
 ## Fault isolation
 

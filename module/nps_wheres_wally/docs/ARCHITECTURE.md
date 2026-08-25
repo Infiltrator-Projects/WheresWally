@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-WHERE'S WALLY converts Microsoft NPS authentication audit records already collected by Zabbix into an operationally useful event table. Version 1.1.5 keeps lightweight live viewing separate from retained-history investigation while making the History API query semantics explicit and testable.
+WHERE'S WALLY converts Microsoft NPS authentication audit records already collected by Zabbix into an operationally useful event table. Version 1.1.6 keeps the live console separate from retained-history investigation, gives the module-owned one-second LIVE scheduler sole responsibility for near-live refreshes, and keeps History API query semantics explicit and independently testable.
 
 ## 2. Data flow
 

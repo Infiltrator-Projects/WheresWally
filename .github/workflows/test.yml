@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test:
@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install test dependencies
         run: sudo apt-get update && sudo apt-get install -y jq php-cli
@@ -23,11 +23,68 @@ jobs:
       - name: Run project tests
         run: ./tools/test.sh
 
-      - name: Build portable installer
-        run: ./tools/build-installer.sh
+      - name: Build release installers
+        run: |
+          ./tools/build-installer.sh
+          ./tools/build-deb.sh
 
-      - name: Build Debian package
-        run: ./tools/build-deb.sh
+      - name: Inspect release artifacts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          version="$(jq -r '.version' module/nps_wheres_wally/manifest.json)"
+          run_file="dist/nps-wheres-wally-zabbix-${version}.run"
+          deb="dist/nps-wheres-wally-zabbix_${version}_all.deb"
 
-      - name: Inspect Debian package
-        run: dpkg-deb --info dist/nps-wheres-wally-zabbix_1.1.5_all.deb
+          test -x "$run_file"
+          test "$(dpkg-deb --field "$deb" Version)" = "$version"
+          test "$(dpkg-deb --field "$deb" Package)" = "nps-wheres-wally-zabbix"
+          test "$(dpkg-deb --field "$deb" Architecture)" = "all"
+
+      - name: Smoke-test portable installer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          version="$(jq -r '.version' module/nps_wheres_wally/manifest.json)"
+          module_root="$(mktemp -d)"
+          trap 'sudo rm -rf "$module_root"' EXIT
+          sudo env ZABBIX_MODULE_ROOT="$module_root" \
+            "./dist/nps-wheres-wally-zabbix-${version}.run"
+          test "$(sudo jq -r '.version' "$module_root/nps_wheres_wally/manifest.json")" = "$version"
+
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheres-wally-installers
+          path: |
+            dist/*.deb
+            dist/*.run
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release ')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          version="$(jq -r '.version' module/nps_wheres_wally/manifest.json)"
+          tag="v${version}"
+          run_file="dist/nps-wheres-wally-zabbix-${version}.run"
+          deb="dist/nps-wheres-wally-zabbix_${version}_all.deb"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$run_file" "$deb" --clobber
+          else
+            gh release create "$tag" "$run_file" "$deb" \
+              --target "$GITHUB_SHA" \
+              --title "WHERE'S WALLY ${version}" \
+              --generate-notes
+          fi
+
+          # Remove the one-off publishing ref used while preparing this release.
+          # A missing ref is harmless on future release runs.
+          gh api -X DELETE \
+            "repos/${GITHUB_REPOSITORY}/git/refs/heads/__tmp_test_tree" \
+            >/dev/null 2>&1 || true
+

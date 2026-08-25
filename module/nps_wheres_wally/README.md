@@ -1,7 +1,7 @@
 # WHERE'S WALLY — NPS Event Monitor
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Version:** 1.1.5  
+**Version:** 1.1.6  
 **Target platform:** Zabbix 7.0 LTS  
 **Licence:** GNU General Public License v3.0 or later
 
@@ -19,12 +19,15 @@ Event 6272 is shown as **Grant**. Event 6273 is shown as **Deny**, including the
 - colour-coded Grant and Deny results;
 - one-second near-live view of the newest events while **Auto-scroll** is enabled;
 - true hold behaviour when **Auto-scroll** is disabled;
-- server-side retained-history search;
+- duplicate native Zabbix refresh scheduling suppressed so LIVE has one owner;
+- hidden browser tabs skip one-second live requests and catch up when visible;
+- explicit server-side retained-history search via Enter or the Search button;
 - optional **Received from/Received to** filtering in the active Zabbix frontend timezone;
 - hard server-side restriction to event IDs 6272 and 6273 before the result limit is applied;
 - maximum 200 rows returned to the browser;
 - CSV export with spreadsheet-formula neutralisation;
 - non-destructive Clear behaviour;
+- visible Grant/Deny counts, LIVE/HOLD/SEARCH state and last-refresh feedback;
 - expandable raw Windows event details;
 - automatic source-item discovery or explicit item selection.
 

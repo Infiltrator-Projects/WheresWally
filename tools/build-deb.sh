@@ -2,24 +2,41 @@
 # Build a native Debian package for WHERE'S WALLY.
 set -Eeuo pipefail
 
+# The module manifest is the release's single source of truth. Deriving the
+# package version here prevents a valid-looking .deb from carrying a version that
+# disagrees with the Zabbix module it installs.
 readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly MODULE_SOURCE="$PROJECT_ROOT/module/nps_wheres_wally"
+readonly MANIFEST="$MODULE_SOURCE/manifest.json"
 readonly PACKAGE_NAME="nps-wheres-wally-zabbix"
-readonly VERSION="1.1.5"
 readonly ARCHITECTURE="all"
 readonly OUTPUT_DIR="${1:-$PROJECT_ROOT/dist}"
-readonly OUTPUT_FILE="$OUTPUT_DIR/${PACKAGE_NAME}_${VERSION}_${ARCHITECTURE}.deb"
 
 command -v dpkg-deb >/dev/null 2>&1 || {
     printf 'ERROR: dpkg-deb is required to build the Debian package.\n' >&2
     exit 1
 }
-
-[[ -f "$MODULE_SOURCE/manifest.json" ]] || {
-    printf 'ERROR: module source not found: %s\n' "$MODULE_SOURCE" >&2
+command -v awk >/dev/null 2>&1 || {
+    printf 'ERROR: awk is required to read the module version.\n' >&2
     exit 1
 }
 
+[[ -f "$MANIFEST" ]] || {
+    printf 'ERROR: module manifest not found: %s\n' "$MANIFEST" >&2
+    exit 1
+}
+
+readonly VERSION="$(awk -F'"' '/^[[:space:]]*"version"[[:space:]]*:/ {print $4; exit}' "$MANIFEST")"
+[[ -n "$VERSION" ]] || {
+    printf 'ERROR: unable to read version from %s\n' "$MANIFEST" >&2
+    exit 1
+}
+
+readonly OUTPUT_FILE="$OUTPUT_DIR/${PACKAGE_NAME}_${VERSION}_${ARCHITECTURE}.deb"
+
+# dpkg-deb assembles ownership metadata independently of the invoking user. A
+# temporary package root therefore needs correct modes, but no privileged chown;
+# --root-owner-group records root ownership in the archive reproducibly.
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
 

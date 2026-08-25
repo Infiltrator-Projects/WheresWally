@@ -10,11 +10,21 @@
 namespace Modules\NpsWheresWally\Includes;
 
 /**
- * Builds the bounded History API request used by the widget.
+ * Build the bounded `history.get` request used by live and historical modes.
  *
- * This class deliberately contains no Zabbix runtime dependencies, which keeps
- * the query semantics independently testable. The caller supplies the Zabbix
- * history type constant.
+ * Design invariants
+ * -----------------
+ * - Event IDs 6272/6273 are always filtered server-side before `limit` applies.
+ * - Exact Grant/Deny shortcuts become indexed equality filters rather than text
+ *   scans over the retained message body.
+ * - Free text is delegated to Zabbix's case-insensitive History API search so
+ *   the browser never downloads an unbounded history set and filters it locally.
+ * - Receipt-time boundaries are passed through unchanged; timezone conversion is
+ *   a separate concern owned by ReceiptDateRange.
+ *
+ * The class intentionally contains no Zabbix runtime references. The controller
+ * supplies the numeric history type constant, which keeps query construction
+ * independently executable in the test harness.
  */
 final class HistoryQueryBuilder {
 
@@ -22,7 +32,7 @@ final class HistoryQueryBuilder {
     public const EVENT_DENIED = 6273;
 
     /**
-     * @return array<string, mixed>
+     * @return array<string, mixed> Options accepted by Zabbix `history.get`.
      */
     public function build(
         int $history_type,
@@ -66,6 +76,9 @@ final class HistoryQueryBuilder {
             $options['time_till'] = $time_till;
         }
 
+        // Zabbix implements ordinary History API text search as a
+        // case-insensitive LIKE-style search. Exact Grant/Deny terms bypass it
+        // above because filtering on logeventid is both clearer and cheaper.
         if ($search_text !== '' && $event_id === null) {
             $options['search'] = ['value' => $search_text];
         }
@@ -73,6 +86,10 @@ final class HistoryQueryBuilder {
         return $options;
     }
 
+    /**
+     * Convert the small operator vocabulary that means "event type" into an
+     * exact Windows Event ID. All other text remains a raw-message search.
+     */
     public function eventIdSearch(string $search_text): ?int {
         return match (strtolower(trim($search_text))) {
             '6272', 'grant', 'granted' => self::EVENT_GRANTED,

@@ -43,6 +43,8 @@ same('Formula equals is neutralised.', widget._csvCell('=2+2'), '"\'=2+2"');
 same('Formula plus is neutralised.', widget._csvCell('+SUM(A1:A2)'), '"\'+SUM(A1:A2)"');
 same('Formula minus is neutralised.', widget._csvCell('-1+2'), '"\'-1+2"');
 same('Formula at-sign is neutralised.', widget._csvCell('@SUM(A1:A2)'), '"\'@SUM(A1:A2)"');
+same('Space-prefixed formula is neutralised.', widget._csvCell(' =2+2'), '"\' =2+2"');
+same('Tab-prefixed formula is neutralised.', widget._csvCell('\t=2+2'), '"\'\t=2+2"');
 
 widget._searchText = ' user ';
 widget._dateFrom = '2026-08-01';
@@ -55,21 +57,21 @@ widget._searchText = '';
 widget._dateFrom = '';
 widget._dateTo = '';
 widget._autoScrollEnabled = false;
-widget._historicalUpdateRequested = false;
+widget._explicitUpdateRequested = false;
 widget._stubUpdateCount = 0;
 widget.promiseUpdate();
 same('Auto-scroll off holds live view.', widget._stubUpdateCount, 0);
 
-widget._historicalUpdateRequested = true;
+widget._explicitUpdateRequested = true;
 widget.promiseUpdate();
 same('One-shot live snapshot is allowed while held.', widget._stubUpdateCount, 1);
 
 widget._searchText = '3076';
-widget._historicalUpdateRequested = false;
+widget._explicitUpdateRequested = false;
 widget.promiseUpdate();
 same('Historical search does not poll automatically.', widget._stubUpdateCount, 1);
 
-widget._historicalUpdateRequested = true;
+widget._explicitUpdateRequested = true;
 widget.promiseUpdate();
 same('Explicit historical search is allowed.', widget._stubUpdateCount, 2);
 

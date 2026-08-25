@@ -10,7 +10,7 @@ The project applies the following standards:
 - deterministic fallback order;
 - bounded external-data requests;
 - no direct database access;
-- comments explain rationale, invariants and constraints rather than restating syntax;
+- comments explain rationale, invariants, lifecycle assumptions, fallback order and safety constraints rather than merely restating syntax;
 - raw source data is preserved when parsing is incomplete;
 - browser-only operations remain non-destructive; history search remains server-side through the Zabbix API.
 
@@ -22,7 +22,7 @@ PHP code follows the established Zabbix module namespace and class layout while 
 
 The JavaScript class extends the Zabbix `CWidget` lifecycle. Transient state belongs to the widget instance so it survives normal dashboard refreshes without being persisted as monitoring configuration.
 
-The implementation uses delegated detail-button handling because the complete widget DOM is replaced after each Zabbix refresh.
+The implementation uses delegated detail-button handling because the complete widget DOM is replaced after each Zabbix refresh. Comments around LIVE/HOLD/SEARCH must document which scheduler owns an update and why; this prevents future changes from accidentally reintroducing duplicate native and module-owned refresh loops.
 
 ## CSS style
 
@@ -40,6 +40,10 @@ All selectors are scoped to the module. Design tokens are declared as custom pro
 ## Localisation
 
 The user-interface strings use Zabbix's translation function. Windows event-message labels do not; they are source protocol text. Supporting non-English Windows Server installations requires a language-specific label map or collection of structured XML rather than superficial UI translation.
+
+## Release metadata
+
+`module/nps_wheres_wally/manifest.json` is the single source of truth for the release version. Builders, tests and CI derive package filenames and metadata from that value; do not duplicate a literal release number in build logic.
 
 ## Versioning
 

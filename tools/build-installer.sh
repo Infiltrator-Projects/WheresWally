@@ -1,33 +1,59 @@
 #!/usr/bin/env bash
-# Build the self-extracting WHERE'S WALLY 1.1.5 installer.
+# Build the self-extracting WHERE'S WALLY installer.
 set -Eeuo pipefail
 
+# The manifest owns the release version. Keeping packaging metadata derived from
+# it eliminates the class of release failures where filenames and installed
+# manifest versions silently diverge.
 readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly MODULE_PARENT="$PROJECT_ROOT/module"
-readonly VERSION="1.1.5"
+readonly MANIFEST="$MODULE_PARENT/nps_wheres_wally/manifest.json"
 readonly OUTPUT_DIR="${1:-$PROJECT_ROOT/dist}"
+
+command -v awk >/dev/null 2>&1 || {
+    printf 'ERROR: awk is required to read the module version.\n' >&2
+    exit 1
+}
+[[ -f "$MANIFEST" ]] || {
+    printf 'ERROR: module manifest not found: %s\n' "$MANIFEST" >&2
+    exit 1
+}
+
+readonly VERSION="$(awk -F'"' '/^[[:space:]]*"version"[[:space:]]*:/ {print $4; exit}' "$MANIFEST")"
+[[ -n "$VERSION" ]] || {
+    printf 'ERROR: unable to read version from %s\n' "$MANIFEST" >&2
+    exit 1
+}
+
 readonly OUTPUT_FILE="$OUTPUT_DIR/nps-wheres-wally-zabbix-${VERSION}.run"
 readonly PAYLOAD_FILE="$(mktemp)"
 
-cleanup() { rm -f "$PAYLOAD_FILE"; }
-trap cleanup EXIT
+cleanup_build() { rm -f "$PAYLOAD_FILE"; }
+trap cleanup_build EXIT
 
 mkdir -p "$OUTPUT_DIR"
 tar -czf "$PAYLOAD_FILE" -C "$MODULE_PARENT" nps_wheres_wally
 
-cat > "$OUTPUT_FILE" <<'INSTALLER'
+# The first fragment is intentionally expanded by the build shell so the version
+# read from manifest.json becomes immutable installer metadata. The second body
+# is single-quoted to preserve all runtime variables literally.
+cat > "$OUTPUT_FILE" <<INSTALLER_HEAD
 #!/usr/bin/env bash
 #
 # WHERE'S WALLY — NPS Event Monitor installer
 # Authors: Shannon Smith and Carlo Cunanan
+# Version: $VERSION
 #
 # Compatible with Zabbix appliances that use PHP-FPM without PHP CLI.
 
 set -Eeuo pipefail
 
+readonly MODULE_VERSION="$VERSION"
+INSTALLER_HEAD
+
+cat >> "$OUTPUT_FILE" <<'INSTALLER_BODY'
 readonly MODULE_ROOT="${ZABBIX_MODULE_ROOT:-/usr/share/zabbix/modules}"
 readonly MODULE_NAME="nps_wheres_wally"
-readonly MODULE_VERSION="1.1.5"
 readonly MODULE_AUTHOR="Shannon Smith and Carlo Cunanan"
 readonly PAYLOAD_MARKER="__NPS_WALLY_PAYLOAD_BELOW__"
 readonly SELF="$0"
@@ -40,12 +66,17 @@ fail() {
     exit 1
 }
 
+# Staging lives on the same filesystem as the final module directory. That makes
+# the final mv atomic rather than copying a partially installed tree into place.
 cleanup() {
     if [[ -n "$stage_dir" && -d "$stage_dir" ]]; then
         rm -rf "$stage_dir"
     fi
 }
 
+# If the old module has already been moved aside but the replacement has not yet
+# reached its final path, restore the backup automatically. Never overwrite a
+# successfully installed new tree during rollback.
 rollback_on_error() {
     local status=$?
 
@@ -80,13 +111,18 @@ manifest="$candidate/manifest.json"
 [[ -d "$candidate" ]] || fail 'Payload does not contain the expected module directory.'
 [[ -f "$manifest" ]] || fail 'Payload does not contain manifest.json.'
 
+# Avoid adding jq/PHP CLI as installer dependencies. These anchored checks only
+# validate immutable module identity metadata; PHP syntax receives a full parser
+# check below when the CLI happens to be available.
 grep -Eq '^[[:space:]]*"id"[[:space:]]*:[[:space:]]*"nps_wheres_wally"[[:space:]]*,?[[:space:]]*$' "$manifest" \
     || fail 'Invalid manifest id.'
 escaped_module_version="${MODULE_VERSION//./\\.}"
-grep -Eq "^[[:space:]]*\"version\"[[:space:]]*:[[:space:]]*\"${escaped_module_version}\"[[:space:]]*,?[[:space:]]*$" "$manifest" \
-    || fail 'Invalid manifest version.'
-grep -Eq '^[[:space:]]*"author"[[:space:]]*:[[:space:]]*"Shannon Smith and Carlo Cunanan"[[:space:]]*,?[[:space:]]*$' "$manifest" \
-    || fail 'Invalid manifest author.'
+grep -Eq \
+    "^[[:space:]]*\"version\"[[:space:]]*:[[:space:]]*\"${escaped_module_version}\"[[:space:]]*,?[[:space:]]*$" \
+    "$manifest" || fail 'Invalid manifest version.'
+grep -Eq \
+    '^[[:space:]]*"author"[[:space:]]*:[[:space:]]*"Shannon Smith and Carlo Cunanan"[[:space:]]*,?[[:space:]]*$' \
+    "$manifest" || fail 'Invalid manifest author.'
 
 if command -v php >/dev/null 2>&1; then
     while IFS= read -r -d '' php_file; do
@@ -102,7 +138,9 @@ find "$candidate" -type d -exec chmod 755 {} + -exec chmod a-s {} +
 find "$candidate" -type f -exec chmod 644 {} +
 
 if [[ -d "$MODULE_ROOT/$MODULE_NAME" ]]; then
-    backup_dir="$MODULE_ROOT/${MODULE_NAME}.backup.$(date +%Y%m%d-%H%M%S)"
+    # PID suffix prevents two very fast reinstall attempts from colliding with
+    # the same second-resolution backup name.
+    backup_dir="$MODULE_ROOT/${MODULE_NAME}.backup.$(date +%Y%m%d-%H%M%S).$$"
     mv "$MODULE_ROOT/$MODULE_NAME" "$backup_dir"
     printf 'Existing module backed up to: %s\n' "$backup_dir"
 fi
@@ -115,7 +153,7 @@ printf 'Author: %s\n' "$MODULE_AUTHOR"
 printf 'Open Zabbix: Administration -> General -> Modules -> Scan directory\n'
 printf 'Confirm the module is enabled, then press Ctrl+F5 in the browser.\n'
 exit 0
-INSTALLER
+INSTALLER_BODY
 
 printf '%s\n' '__NPS_WALLY_PAYLOAD_BELOW__' >> "$OUTPUT_FILE"
 cat "$PAYLOAD_FILE" >> "$OUTPUT_FILE"

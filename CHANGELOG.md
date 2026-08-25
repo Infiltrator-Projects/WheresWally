@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.1.6 — 2026-08-25
+
+- Completed a forensic source, comments, lifecycle, packaging and interface review.
+- Expanded source commentary around Zabbix lifecycle ownership, LIVE/HOLD/SEARCH invariants, parser fallbacks, receipt-time semantics and installer rollback behaviour.
+- Removed the obsolete parser-side synthetic search field left behind after retained-history search moved into the Zabbix History API.
+- Prevented Zabbix's native refresh interval from running alongside the module-owned one-second LIVE scheduler after a successful render.
+- Suspended one-second LIVE requests while the browser tab is hidden and resume automatically when it becomes visible.
+- Added an explicit Search button while preserving Enter-to-search behaviour.
+- Polished the toolbar, LIVE/HOLD/SEARCH status badge, Auto-scroll switch, table scanning, result badges, detail panel and responsive layout.
+- Added visible event/Grant/Deny counts and a browser-local last-updated indicator.
+- Made CSV headings follow the rendered/translated table and extended formula neutralisation to whitespace-prefixed payloads.
+- Made `manifest.json` the single release-version source for build scripts, tests and CI to prevent package/manifest drift.
+- Expanded DST and client regression coverage and modernised GitHub Actions packaging.
+- Corrected the historical comprehensive-refactor changelog heading from 1.1.1 to 1.1.0.
+
 ## 1.1.5 — 2026-08-25
 
 - Restored the intended Auto-scroll semantics: checked means live feed; unchecked means hold the current display.
@@ -48,7 +63,7 @@
 - Added installer regression coverage for Zabbix appliances that provide PHP-FPM without a `php` executable.
 - Preserved the module identifier so existing dashboards continue to use the upgraded widget.
 
-## 1.1.1 — 2026-07-31
+## 1.1.0 — 2026-07-31
 
 - Standardised project attribution and distributable metadata.
 - Refactored Windows event parsing into an independently testable class.

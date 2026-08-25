@@ -28,7 +28,7 @@ NPS events may contain usernames, device identifiers, network locations, IP addr
 
 Export occurs entirely in the user's browser. The module does not write exported files to the Zabbix server. The generated CSV reflects the currently visible live/search result rows only; historical queries are bounded to at most 200 returned rows.
 
-Spreadsheet applications may interpret cells beginning with formula markers such as `=`, `+`, `-` or `@`. Version 1.1.4 and later neutralise those prefixes with a leading apostrophe before CSV quoting so event data is opened as text rather than evaluated as a spreadsheet formula.
+Spreadsheet applications may interpret cells beginning with formula markers such as `=`, `+`, `-` or `@`. The exporter neutralises direct formula prefixes, control-character prefixes and whitespace followed by a formula marker with a leading apostrophe before CSV quoting so event data is opened as text rather than evaluated as a spreadsheet formula.
 
 ## Clear operation
 

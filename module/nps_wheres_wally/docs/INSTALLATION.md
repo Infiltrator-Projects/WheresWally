@@ -8,10 +8,10 @@ Build the native package with:
 ./tools/build-deb.sh
 ```
 
-Install version 1.1.5 with:
+Install version 1.1.6 with:
 
 ```bash
-sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.5_all.deb
+sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.6_all.deb
 ```
 
 The package is architecture-independent and installs the module under:
@@ -27,8 +27,8 @@ It declares a dependency on the Zabbix PHP frontend and does not modify the Zabb
 Copy the `.run` installer to the Zabbix appliance, normally under `/tmp`, then execute it as root:
 
 ```bash
-chmod +x /tmp/nps-wheres-wally-zabbix-1.1.5.run
-/tmp/nps-wheres-wally-zabbix-1.1.5.run
+chmod +x /tmp/nps-wheres-wally-zabbix-1.1.6.run
+/tmp/nps-wheres-wally-zabbix-1.1.6.run
 ```
 
 The portable installer does **not** require PHP CLI. This is deliberate: a Zabbix appliance can run the frontend through PHP-FPM without providing a `php` command. When PHP CLI is present, the installer performs an additional syntax check; otherwise it reports the check as skipped and continues.
@@ -62,7 +62,7 @@ The `.run` installer prints the backup directory name. To roll back:
 ```bash
 cd /usr/share/zabbix/modules
 mv nps_wheres_wally nps_wheres_wally.failed
-mv nps_wheres_wally.backup.YYYYMMDD-HHMMSS nps_wheres_wally
+mv nps_wheres_wally.backup.YYYYMMDD-HHMMSS.PID nps_wheres_wally
 restorecon -RF nps_wheres_wally 2>/dev/null || true
 ```
 

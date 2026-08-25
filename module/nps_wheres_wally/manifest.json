@@ -4,9 +4,9 @@
   "type": "widget",
   "name": "WHERE'S WALLY — NPS Event Monitor",
   "namespace": "NpsWheresWally",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "author": "Shannon Smith and Carlo Cunanan",
-  "description": "Zabbix 7.0 NPS 6272/6273 event monitor with one-second live/hold Auto-scroll, retained-history search, receipt-date filtering and CSV export.",
+  "description": "Zabbix 7.0 NPS 6272/6273 event monitor with one-second LIVE/HOLD Auto-scroll, explicit retained-history search, receipt-date filtering and CSV export.",
   "actions": {
     "widget.nps_wheres_wally.view": {
       "class": "WidgetView"

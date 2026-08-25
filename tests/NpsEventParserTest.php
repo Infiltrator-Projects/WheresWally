@@ -1,12 +1,5 @@
 <?php declare(strict_types = 1);
 
-/**
- * Lightweight regression tests for NpsEventParser.
- *
- * The test deliberately avoids PHPUnit so it can run on a standard Zabbix
- * appliance or development workstation with only the PHP CLI installed.
- */
-
 use Modules\NpsWheresWally\Includes\NpsEventParser;
 
 require_once __DIR__.'/../module/nps_wheres_wally/includes/NpsEventParser.php';
@@ -67,7 +60,7 @@ assertSameValue('6272 long status.', $grant['status_long'], 'Grant');
 assertSameValue('Source timestamp has precedence.', $grant['event_clock'], 1785459567);
 assertSameValue('Receipt key is fixed width.', $grant['received_key'], '1785459572000000042');
 assertSameValue('Connection policy parsed.', $grant['connection_request_policy'], 'Secure Wireless');
-assertTrueValue('Search text includes person in lower case.', str_contains($grant['search'], 'charli hart'));
+assertSameValue('Parser no longer carries obsolete client-search data.', array_key_exists('search', $grant), false);
 
 $deny = $parser->parse([
     'value' => fixture('event-6273.txt'),
