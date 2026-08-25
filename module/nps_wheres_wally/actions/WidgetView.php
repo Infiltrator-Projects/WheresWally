@@ -12,6 +12,7 @@ namespace Modules\NpsWheresWally\Actions;
 use API;
 use CControllerDashboardWidgetView;
 use CControllerResponseData;
+use Modules\NpsWheresWally\Includes\AccessPointIdentity;
 use Modules\NpsWheresWally\Includes\HistoryQueryBuilder;
 use Modules\NpsWheresWally\Includes\NpsEventParser;
 use Modules\NpsWheresWally\Includes\ReceiptDateRange;
@@ -23,9 +24,19 @@ use Modules\NpsWheresWally\Includes\WidgetForm;
  * Responsibility boundary
  * -----------------------
  * This class is deliberately the only module component that talks to Zabbix's
- * runtime API. Parsing, date-boundary calculation and query construction live
- * in dependency-light helper classes so their rules can be regression tested
- * without booting a Zabbix frontend.
+ * runtime API. Parsing, date-boundary calculation, query construction and MAC
+ * normalisation live in dependency-light helper classes so their rules can be
+ * regression tested without booting a Zabbix frontend.
+ *
+ * Access-point identity
+ * ---------------------
+ * NPS Client Friendly Name is configuration metadata, not authoritative current
+ * inventory. After parsing, the controller correlates the NPS AP-side BSSID and
+ * NAS/client IP with monitored Zabbix hosts. Exact BSSID/MAC inventory matches
+ * win; current host-interface IP is the bounded fallback. If no current Zabbix
+ * host can be resolved, the main Location cell says so instead of presenting a
+ * stale NPS friendly name as fact. The complete original NPS event remains in
+ * Details for evidence.
  *
  * Time semantics
  * --------------
@@ -46,6 +57,13 @@ final class WidgetView extends CControllerDashboardWidgetView {
 
     /** Server-side upper bound mirrored by the HTML search control. */
     private const MAXIMUM_SEARCH_LENGTH = 256;
+
+    /**
+     * Bound exceptional MAC-inventory searches per refresh. The normal path is
+     * one batched interface-IP lookup; MAC searches are only required when IP is
+     * unavailable or conflicts with a populated inventory MAC.
+     */
+    private const MAXIMUM_MAC_FALLBACK_LOOKUPS = 16;
 
     /**
      * Register only transient request fields. Persistent widget fields are
@@ -112,7 +130,7 @@ final class WidgetView extends CControllerDashboardWidgetView {
 
     /**
      * Execute one bounded History API request and convert accepted log rows into
-     * presentation-neutral NPS events.
+     * presentation-neutral NPS events, then enrich AP identity from Zabbix.
      *
      * The query builder already constrains `logeventid` to 6272/6273 before the
      * result limit is applied. The parser check remains intentionally redundant:
@@ -164,7 +182,173 @@ final class WidgetView extends CControllerDashboardWidgetView {
             $rows[] = $row;
         }
 
+        return $this->enrichAccessPointRows($rows);
+    }
+
+    /**
+     * Replace NPS's potentially stale friendly-name location with current Zabbix
+     * identity. The original event message is untouched and remains available in
+     * Details, so enrichment never destroys evidence supplied by NPS.
+     *
+     * Matching order is deliberately conservative:
+     * 1. BSSID equals MAC inventory on the host currently owning the NPS IP;
+     * 2. exact BSSID search in MAC inventory when IP is absent/conflicting;
+     * 3. exact current Zabbix host-interface IP fallback;
+     * 4. unresolved — never guess from a stale Client Friendly Name.
+     *
+     * @param list<array<string, int|string>> $rows
+     * @return list<array<string, int|string>>
+     */
+    private function enrichAccessPointRows(array $rows): array {
+        if ($rows === []) {
+            return [];
+        }
+
+        $ips = [];
+        foreach ($rows as $row) {
+            $ip = trim((string) ($row['ip_address'] ?? ''));
+
+            if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP) !== false) {
+                $ips[$ip] = true;
+            }
+        }
+
+        $hosts_by_ip = $this->hostsByInterfaceIp(array_keys($ips));
+        $hosts_by_mac = [];
+        $mac_lookups = 0;
+
+        foreach ($rows as &$row) {
+            $ip = trim((string) ($row['ip_address'] ?? ''));
+            $bssid = AccessPointIdentity::normaliseMac((string) ($row['access_point'] ?? ''));
+            $ip_host = $hosts_by_ip[$ip] ?? null;
+            $matched_host = null;
+
+            // The strongest inexpensive case is agreement between the event IP
+            // and a MAC explicitly stored on that current Zabbix host.
+            if ($ip_host !== null && $bssid !== ''
+                    && AccessPointIdentity::hwstHasMac($ip_host, $bssid)) {
+                $matched_host = $ip_host;
+            }
+            else {
+                // Search inventory by MAC only when it adds information: either
+                // the event IP no longer resolves, or the resolved host has a
+                // populated MAC that conflicts with the event BSSID. This keeps
+                // the one-second LIVE path bounded on installations where MAC
+                // inventory is not populated.
+                $needs_mac_search = $bssid !== '' && (
+                    $ip_host === null
+                    || AccessPointIdentity::hostHasInventoryMac($ip_host)
+                );
+
+                if ($needs_mac_search && !array_key_exists($bssid, $hosts_by_mac)
+                        && $mac_lookups < self::MAXIMUM_MAD_FALLBACK_LOOKUPS) {
+                    $hosts_by_mac[$bssid] = $this->findHostByInventoryMac($bssid);
+                    $mac_lookups++;
+                }
+
+                if ($bssid !== '' && ($hosts_by_mac[$bssid] ?? null) !== null) {
+                    $matched_host = $hosts_by_mac[$bssid];
+                }
+                elseif ($ip_host !== null) {
+                    $matched_host = $ip_host;
+                }
+            }
+
+            if ($matched_host !== null) {
+                $row['location'] = AccessPointIdentity::displayLocation($matched_host);
+            }
+            else {
+                $row['location'] = _('Not found in Zabbix');
+            }
+        }
+        unset($row);
+
         return $rows;
+    }
+
+    /**
+     * Batch-resolve current monitored hosts by exact interface IP. `host.get`
+     * supports host-interface properties in `filter`, so one request resolves all
+     * unique AP/NAS IPs represented in the current result set.
+     *
+     * @param list<string> $ips
+     * @return array<string, array<string, mixed>> keyed by exact interface IP
+     */
+    private function hostsByInterfaceIp(array $ips): array {
+        if ($ips === []) {
+            return [];
+        }
+
+        $hosts = API::Host()->get([
+            'output' => ['hostid', 'host', 'name', 'status'],
+            'selectInterfaces' => ['interfaceid', 'ip', 'main', 'type', 'useip'],
+            'selectInventory' => ['location', 'macaddress_a', 'macaddress_b'],
+            'filter' => [
+                'status' => 0,
+                'ip' => $ips
+            ],
+            'sortfield' => 'name'
+        ]);
+
+        $wanted = array_fill_keys($ips, true);
+        $resolved = [];
+        $scores = [];
+
+        foreach ($hosts as $host) {
+            foreach ($host['interfaces'] ?? [] as $interface) {
+                $ip = trim((string) ($interface['ip'] ?? ''));
+
+                if (!isset($wanted[$ip])) {
+                    continue;
+                }
+
+                $score = (int) ($interface['main'] ?? 0);
+                if (!isset($resolved[$ip]) || $score > ($scores[$ip] ?? -1)) {
+                    $resolved[$ip] = $host;
+                    $scores[$ip] = $score;
+                }
+            }
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * Find a current monitored host whose standard inventory MAC exactly equals
+     * the NPS BSSID after separator/case normalisation.
+     *
+     * Zabbix inventory search is textual, so each common representation is tried
+     * and every returned candidate is rechecked locally for exact equality. This
+     * prevents a partial LIKE match from becoming an identity match.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function findHostByInventoryMac(string $bssid): ?array {
+        foreach (AccessPointIdentity::macVariants($bssid) as $variant) {
+            $hosts = API::Host()->get([
+                'output' => ['hostid', 'host', 'name', 'status'],
+                'selectInterfaces' => ['interfaceid', 'ip', 'main', 'type', 'useip'],
+                'selectInventory' => ['location', 'macaddress_a', 'macaddress_b'],
+                'filter' => [
+                    'status' => 0
+                ],
+                'searchInventory' => [
+                    'macaddress_a' => $variant,
+                    'macaddress_b' => $variant
+                ],
+                'searchByAny' => true,
+                'sortfield' => 'name',
+                'limit' => 10
+            ]);
+
+            foreach ($hosts as $host) {
+                if (AccessPointIdentity::hostHasMac($host, $bssid)) {
+                    return $host;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

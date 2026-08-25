@@ -3,67 +3,42 @@
 **A native Zabbix 7.0 LTS dashboard widget for monitoring Microsoft Network Policy Server authentication events.**
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Release:** 1.1.6  
+**Release:** 1.1.7  
 **Platform:** Zabbix 7.0 LTS  
 **Type:** Zabbix dashboard widget/module  
 **Licence:** GNU General Public License v3.0 or later
 
-WHERE'S WALLY is designed specifically for Zabbix. It installs as a Zabbix frontend module and uses the Zabbix History API to monitor Microsoft NPS authentication events 6272 (granted) and 6273 (denied).
+WHERE'S WALLY installs as a Zabbix frontend module and uses Zabbix APIs to display Microsoft NPS Security events 6272 (Grant) and 6273 (Deny).
 
-Version 1.1.6 completes a forensic code and interface pass. Auto-scroll ON remains the one-second live feed and Auto-scroll OFF remains a true hold, while the widget now avoids duplicate native Zabbix refresh scheduling, skips one-second live requests in hidden browser tabs, exposes an explicit Search button, and presents clearer LIVE / HOLD / SEARCH state, event counts and last-refresh feedback.
+Version 1.1.7 fixes access-point identity. NPS `Client Friendly Name` is no longer treated as authoritative location data. WHERE'S WALLY correlates the AP-side BSSID and RADIUS/NAS IP against current monitored Zabbix hosts. Exact MAC inventory matches take precedence; current host-interface IP is the bounded fallback. If no current Zabbix host resolves, the main table says so rather than showing a stale NPS label as fact. The complete original NPS event remains available in Details.
 
 ## Installation
 
 ### Debian / Ubuntu / Linux Mint
 
-Build the native Debian package:
-
 ```bash
 ./tools/build-deb.sh
-```
-
-Install it with:
-
-```bash
-sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.6_all.deb
+sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.7_all.deb
 ```
 
 ### Portable installer
 
-Build the self-extracting installer:
-
 ```bash
 ./tools/build-installer.sh
+sudo ./dist/nps-wheres-wally-zabbix-1.1.7.run
 ```
 
-Run the resulting `dist/nps-wheres-wally-zabbix-1.1.6.run` as root.
-
-Both installers place the widget under the Zabbix module directory, normally:
-
-```text
-/usr/share/zabbix/modules/nps_wheres_wally
-```
-
-Then open **Zabbix → Administration → General → Modules → Scan directory**, enable WHERE'S WALLY, and refresh the browser.
+Both installers normally install to `/usr/share/zabbix/modules/nps_wheres_wally`. Then open **Zabbix → Administration → General → Modules → Scan directory**, enable WHERE'S WALLY, and refresh the browser.
 
 ## Live / hold behaviour
 
-With search and receipt-date fields blank, **Auto-scroll** is the live-feed switch:
+With search and receipt-date fields blank, **Auto-scroll** is the live-feed switch. Checked means one-second LIVE updates; unchecked means HOLD. Historical searches remain explicit via Enter or the Search button.
 
-- checked: the widget checks Zabbix for new NPS events every second and keeps the newest rows in view;
-- unchecked: the current display is held in place and periodic refreshes do not replace it.
+## AP identity behaviour
 
-Historical searches are always user-driven. Press Enter or use the **Search** button to execute or refresh a retained-history search.
+For every displayed NPS row, WHERE'S WALLY treats the Called-Station-Identifier MAC/BSSID as AP-side identity evidence and the NPS client/NAS IP as current Zabbix-host evidence. A Zabbix host whose inventory MAC exactly matches the BSSID wins. If inventory MAC is unavailable, an exact current Zabbix interface-IP match is used as a fallback. No approximate MAC guessing is performed.
 
-## Search behaviour
-
-Blank search/date fields show the newest configured events. Free-text searches execute server-side through `history.get` and return at most 200 matching rows.
-
-The **Received from** and **Received to** controls deliberately filter on Zabbix receipt time because `history.get` defines `time_from` and `time_till` on the receipt clock. The primary **Time** column remains the original Windows event timestamp when supplied by the event log; Zabbix receipt time is shown in Details.
-
-Exact searches for `6272`, `grant`, `granted`, `6273`, `deny`, or `denied` are converted to exact event-ID filters instead of text scans.
-
-Free-text search uses Zabbix's case-insensitive History API search against the retained event message. On extremely large retention sets, adding a receipt-date range is recommended to reduce database work.
+This deliberately allows current Zabbix naming to replace stale NPS labels such as an old `Client Friendly Name` after an AP has been renamed, replaced or moved.
 
 ## Validation
 
@@ -71,4 +46,4 @@ Free-text search uses Zabbix's case-insensitive History API search against the r
 ./tools/test.sh
 ```
 
-The suite checks PHP and JavaScript syntax, parser behaviour, History API query construction, timezone/DST boundaries, live/hold request gating, CSV formula neutralisation, packaging metadata and both installer build paths.
+The suite checks PHP/JavaScript syntax, NPS parsing, access-point identity normalisation, History API query construction, timezone/DST boundaries, LIVE/HOLD behaviour, CSV hardening and both installer formats.

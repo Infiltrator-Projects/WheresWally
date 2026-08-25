@@ -8,28 +8,16 @@
 | Domain | First `Account Domain` | Blank when absent |
 | Name | Final component of `Fully Qualified Account Name` | Account value |
 | Access point | MAC portion of `Called Station Identifier` | Full called-station value for unknown formats |
-| Location | `Client Friendly Name` | `NAS Identifier`, then SSID suffix |
+| Location | Current matched Zabbix host inventory `location` | Current Zabbix visible host name; `Not found in Zabbix` when unresolved |
 | Device MAC | `Calling Station Identifier` | Blank when absent |
-| IP address | `Client IP Address` | `NAS IPv4 Address` |
+| IP address | NPS `Client IP Address` | `NAS IPv4 Address`; used as exact Zabbix host-interface fallback for AP correlation |
 | Result | Event 6272 or 6273 | 6272 = Grant; 6273 = Deny |
-| Details: Received | Zabbix history `clock` | Formatted in the active Zabbix frontend timezone |
-| Details: SSID | Suffix of `Called Station Identifier` | Blank when absent |
-| Details: Network policy | `Network Policy Name` | Blank when absent |
-| Details: Connection policy | `Connection Request Policy Name` | Blank when absent |
-| Details: Authentication | `Authentication Type` | Blank when absent |
-| Details: EAP | `EAP Type` | Blank when absent |
-| Details: Reason code | `Reason Code` | Applicable mainly to event 6273 |
-| Details: Reason | `Reason` | Blank when absent |
-| Details: raw message | Zabbix history `value` | Line endings normalised to LF |
+| Details: raw message | Zabbix history `value` | Original NPS friendly name/NAS metadata retained unchanged |
 
-## Time semantics
+## AP identity semantics
 
-The primary **Time** value represents the Windows source event timestamp when the event log supplied one. The **Received** value is the Zabbix history receipt clock. Historical **Received from/Received to** filtering uses the receipt clock because that is the time domain supported by `history.get` date bounds.
+`Client Friendly Name` is not treated as authoritative current location. It is NPS/RADIUS configuration metadata and can become stale after an AP is renamed, replaced or moved.
 
-## Duplicate labels
+WHERE'S WALLY correlates the AP-side BSSID against Zabbix `macaddress_a` / `macaddress_b` using separator-insensitive exact comparison. When exact MAC inventory is unavailable, the event's NPS client/NAS IP is matched exactly against current monitored Zabbix host interfaces. If neither path resolves a current Zabbix host, the main Location field reports `Not found in Zabbix` rather than presenting stale NPS metadata as fact.
 
-Windows NPS messages contain repeated labels in different sections, particularly `Account Name`. The parser intentionally uses the first occurrence because it belongs to the authenticating User section. Client-computer identity remains available in the raw event.
-
-## Empty markers
-
-Windows commonly represents an unavailable value as a single hyphen. The parser converts that marker to an empty string. It does not convert other values, because vendor-specific attributes may legitimately contain unusual text.
+No approximate BSSID-to-chassis-MAC arithmetic is performed.

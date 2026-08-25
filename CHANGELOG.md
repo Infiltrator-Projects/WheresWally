@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.7 — 2026-08-25
+
+- Fixed stale AP/location identity caused by presenting NPS `Client Friendly Name` as current location.
+- Added current Zabbix host correlation for every displayed NPS event.
+- Treats the Called-Station-Identifier BSSID/MAC as primary identity evidence when it exactly matches Zabbix host inventory.
+- Uses exact monitored Zabbix host-interface IP as a bounded fallback when MAC inventory is unavailable.
+- Performs bounded inventory-MAC searches only when IP is absent or conflicts with populated MAC inventory, preserving one-second LIVE performance.
+- Never guesses approximate/chassis-adjacent MACs; unresolved APs are shown as `Not found in Zabbix` instead of a stale NPS label.
+- Added format-neutral MAC normalisation and regression tests for access-point identity matching.
+- Preserved the original NPS event unchanged in Details for forensic evidence.
+
 ## 1.1.6 — 2026-08-25
 
 - Completed a forensic source, comments, lifecycle, packaging and interface review.

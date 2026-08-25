@@ -1,45 +1,32 @@
 # WHERE'S WALLY — NPS Event Monitor
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Version:** 1.1.6  
+**Version:** 1.1.7  
 **Target platform:** Zabbix 7.0 LTS  
 **Licence:** GNU General Public License v3.0 or later
 
-WHERE'S WALLY is a custom Zabbix dashboard widget for Microsoft Network Policy Server authentication events. It reads an existing Zabbix log item containing Windows Security events 6272 and 6273, parses the human-readable NPS message, and displays one authentication decision per row.
-
-Event 6272 is shown as **Grant**. Event 6273 is shown as **Deny**, including the NPS reason code when available.
+WHERE'S WALLY is a custom Zabbix dashboard widget for Microsoft NPS authentication events 6272 and 6273.
 
 ## Capabilities
 
 - one row per NPS authentication event;
-- event time sourced from the Windows event timestamp when available;
-- Zabbix receipt time retained separately and shown in Details;
-- account, domain and resolved display name;
-- access-point identifier, location, device MAC address and IP address;
-- colour-coded Grant and Deny results;
-- one-second near-live view of the newest events while **Auto-scroll** is enabled;
-- true hold behaviour when **Auto-scroll** is disabled;
-- duplicate native Zabbix refresh scheduling suppressed so LIVE has one owner;
-- hidden browser tabs skip one-second live requests and catch up when visible;
-- explicit server-side retained-history search via Enter or the Search button;
-- optional **Received from/Received to** filtering in the active Zabbix frontend timezone;
-- hard server-side restriction to event IDs 6272 and 6273 before the result limit is applied;
-- maximum 200 rows returned to the browser;
-- CSV export with spreadsheet-formula neutralisation;
-- non-destructive Clear behaviour;
-- visible Grant/Deny counts, LIVE/HOLD/SEARCH state and last-refresh feedback;
-- expandable raw Windows event details;
-- automatic source-item discovery or explicit item selection.
+- Windows source event time plus separate Zabbix receipt time;
+- account, domain, resolved display name, AP/BSSID, device MAC and RADIUS/NAS IP;
+- current Zabbix AP identity enrichment instead of trusting stale NPS friendly names;
+- exact BSSID/MAC inventory correlation when available, with exact monitored-host interface IP fallback;
+- explicit unresolved state when no current Zabbix host can be correlated;
+- one-second LIVE view with true HOLD when Auto-scroll is disabled;
+- retained-history search and receipt-date filtering;
+- maximum 200 returned rows;
+- spreadsheet-safe CSV export, non-destructive Clear and expandable raw event details.
 
-## Search and date semantics
+## Access-point identity
 
-With all search controls blank, **Auto-scroll** controls live operation. Enabled, the widget checks for new NPS events once per second and follows the newest rows. Disabled, the current rows remain fixed until Auto-scroll is enabled again or an explicit operation requests a snapshot.
+NPS `Client Friendly Name` is configuration metadata and can outlive an AP rename or replacement. WHERE'S WALLY therefore does not use it as authoritative current location.
 
-Free text is sent to Zabbix `history.get` as a case-insensitive search against the retained log `value`. Exact Grant/Deny shortcuts are translated to event-ID filters.
+The controller first checks whether the NPS BSSID exactly matches `macaddress_a` or `macaddress_b` on the Zabbix host owning the event's current interface IP. If IP is unavailable or conflicts with populated MAC inventory, a bounded exact inventory-MAC lookup is attempted. If no MAC match is available, the exact current Zabbix interface-IP match is used. Approximate or vendor-offset MAC guessing is intentionally forbidden.
 
-Zabbix defines `time_from` and `time_till` on the time a value was **received**, not on the source event timestamp. Accordingly, the date controls are explicitly labelled **Received from** and **Received to**. Date strings are converted to timestamps in PHP using the active Zabbix frontend timezone. The Windows event timestamp remains the main displayed event time.
-
-For very large retention sets, a receipt-date range reduces the work required by a free-text History API search.
+If the matched Zabbix host has an inventory `location`, that is displayed. Otherwise its current visible Zabbix host name is displayed. The original NPS message remains unchanged in Details.
 
 ## Required Zabbix item
 
@@ -56,5 +43,3 @@ Type:                Zabbix agent (active)
 Key:                 eventlog[Security,,,,^(6272|6273)$,,skip]
 Type of information: Log
 ```
-
-The preferred host name is `Server NPS`. A differently named host or item can be selected explicitly in widget configuration; server-side event-ID filtering still guarantees that only 6272/6273 records are displayed.
