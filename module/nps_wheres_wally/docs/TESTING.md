@@ -2,7 +2,7 @@
 
 ## Static validation
 
-- `manifest.json` parses and identifies version 1.1.4 and the two project authors.
+- `manifest.json` parses and identifies version 1.1.5 and the two project authors.
 - Every PHP file passes `php -l`.
 - Production and test JavaScript pass `node --check`.
 - Installer/build shell scripts pass `bash -n`.
@@ -21,11 +21,18 @@
 
 ## Client regression
 
-`tests/WidgetClientTest.js` executes the widget class in a minimal Node test harness. It verifies spreadsheet-formula neutralisation in CSV cells and confirms date strings are sent to PHP without browser-local epoch conversion.
+`tests/WidgetClientTest.js` executes the widget class in a minimal Node test harness. It verifies spreadsheet-formula neutralisation in CSV cells, confirms date strings are sent to PHP without browser-local epoch conversion, and verifies that Auto-scroll OFF suppresses live refreshes while explicit one-shot and historical requests still run.
 
 ## Package validation
 
 When `dpkg-deb` is available, `tools/test.sh` builds the `.deb`, validates its metadata and confirms the Zabbix module manifest is installed at the expected path. GitHub Actions also builds both the `.run` and `.deb` installers.
+
+## Live / hold acceptance
+
+1. Leave Search/Received fields blank with Auto-scroll checked and generate a new 6272/6273 event. Confirm it appears without waiting for the Zabbix 10-second minimum refresh interval.
+2. Uncheck Auto-scroll and generate another event. Confirm the rendered rows remain unchanged.
+3. Re-check Auto-scroll and confirm the new event appears immediately and the newest row is followed.
+4. Enter a historical search and confirm one-second live polling stops until search is reset.
 
 ## Historical-search acceptance
 

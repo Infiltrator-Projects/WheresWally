@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-WHERE'S WALLY converts Microsoft NPS authentication audit records already collected by Zabbix into an operationally useful event table. Version 1.1.4 keeps lightweight live viewing separate from retained-history investigation while making the History API query semantics explicit and testable.
+WHERE'S WALLY converts Microsoft NPS authentication audit records already collected by Zabbix into an operationally useful event table. Version 1.1.5 keeps lightweight live viewing separate from retained-history investigation while making the History API query semantics explicit and testable.
 
 ## 2. Data flow
 
@@ -68,7 +68,7 @@ Builds the search/receipt-date toolbar, semantic table and expandable detail row
 
 ### `assets/js/class.widget.js`
 
-Maintains transient search/date state, submits criteria only when Enter is pressed, suppresses repeated periodic historical queries, preserves non-destructive Clear state, and implements Details and spreadsheet-safe CSV export. Date strings are sent to PHP without browser-local epoch conversion.
+Maintains transient search/date state, owns the one-second live poll, makes Auto-scroll the live/hold switch, submits criteria only when Enter is pressed, suppresses repeated periodic historical queries, preserves non-destructive Clear state, and implements Details and spreadsheet-safe CSV export. Date strings are sent to PHP without browser-local epoch conversion.
 
 ## 4. Search and date model
 
@@ -80,7 +80,7 @@ Exact searches for `6272`, `grant`, or `granted` use event ID 6272; `6273`, `den
 
 ## 5. Refresh model
 
-Normal live mode follows the configured Zabbix dashboard refresh interval. Historical queries are deliberately user-driven: changing search text or dates and pressing Enter performs one query, and ordinary periodic widget refreshes do not repeat that same retained-history search. Resetting the criteria returns to live mode.
+Normal live mode uses a widget-owned one-second poll while Auto-scroll is enabled. Turning Auto-scroll off stops that poll, aborts any in-flight live request and suppresses ordinary periodic Zabbix refresh attempts so the rendered rows remain fixed. Historical queries are deliberately user-driven: changing search text or dates and pressing Enter performs one query, and periodic widget refreshes do not repeat that retained-history search. Resetting the criteria returns to a live feed when Auto-scroll is on, or to one current snapshot that then remains held when Auto-scroll is off.
 
 ## 6. Source-item resolution
 

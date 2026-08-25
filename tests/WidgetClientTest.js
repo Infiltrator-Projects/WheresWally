@@ -11,6 +11,14 @@ const source = fs.readFileSync(
 
 class StubWidget {
     getUpdateRequestData() { return {}; }
+    promiseUpdate() {
+        this._stubUpdateCount = (this._stubUpdateCount || 0) + 1;
+        return Promise.resolve();
+    }
+    onInitialize() {}
+    onActivate() {}
+    onDeactivate() {}
+    onDestroy() {}
 }
 const context = {
     CWidget: StubWidget,
@@ -42,5 +50,27 @@ widget._dateTo = '2026-08-25';
 const request = widget.getUpdateRequestData();
 same('Date is sent as a date string.', request.date_from, '2026-08-01');
 same('No browser-local epoch conversion is used.', typeof request.date_from, 'string');
+
+widget._searchText = '';
+widget._dateFrom = '';
+widget._dateTo = '';
+widget._autoScrollEnabled = false;
+widget._historicalUpdateRequested = false;
+widget._stubUpdateCount = 0;
+widget.promiseUpdate();
+same('Auto-scroll off holds live view.', widget._stubUpdateCount, 0);
+
+widget._historicalUpdateRequested = true;
+widget.promiseUpdate();
+same('One-shot live snapshot is allowed while held.', widget._stubUpdateCount, 1);
+
+widget._searchText = '3076';
+widget._historicalUpdateRequested = false;
+widget.promiseUpdate();
+same('Historical search does not poll automatically.', widget._stubUpdateCount, 1);
+
+widget._historicalUpdateRequested = true;
+widget.promiseUpdate();
+same('Explicit historical search is allowed.', widget._stubUpdateCount, 2);
 
 console.log('WidgetClientTest: all assertions passed.');

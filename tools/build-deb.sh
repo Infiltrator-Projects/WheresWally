@@ -5,7 +5,7 @@ set -Eeuo pipefail
 readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly MODULE_SOURCE="$PROJECT_ROOT/module/nps_wheres_wally"
 readonly PACKAGE_NAME="nps-wheres-wally-zabbix"
-readonly VERSION="1.1.4"
+readonly VERSION="1.1.5"
 readonly ARCHITECTURE="all"
 readonly OUTPUT_DIR="${1:-$PROJECT_ROOT/dist}"
 readonly OUTPUT_FILE="$OUTPUT_DIR/${PACKAGE_NAME}_${VERSION}_${ARCHITECTURE}.deb"

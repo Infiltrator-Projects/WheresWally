@@ -30,4 +30,4 @@ jobs:
         run: ./tools/build-deb.sh
 
       - name: Inspect Debian package
-        run: dpkg-deb --info dist/nps-wheres-wally-zabbix_1.1.4_all.deb
+        run: dpkg-deb --info dist/nps-wheres-wally-zabbix_1.1.5_all.deb

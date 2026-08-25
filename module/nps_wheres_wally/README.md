@@ -1,7 +1,7 @@
 # WHERE'S WALLY — NPS Event Monitor
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Version:** 1.1.4  
+**Version:** 1.1.5  
 **Target platform:** Zabbix 7.0 LTS  
 **Licence:** GNU General Public License v3.0 or later
 
@@ -17,7 +17,8 @@ Event 6272 is shown as **Grant**. Event 6273 is shown as **Deny**, including the
 - account, domain and resolved display name;
 - access-point identifier, location, device MAC address and IP address;
 - colour-coded Grant and Deny results;
-- live view of the newest events;
+- one-second near-live view of the newest events while **Auto-scroll** is enabled;
+- true hold behaviour when **Auto-scroll** is disabled;
 - server-side retained-history search;
 - optional **Received from/Received to** filtering in the active Zabbix frontend timezone;
 - hard server-side restriction to event IDs 6272 and 6273 before the result limit is applied;
@@ -29,7 +30,7 @@ Event 6272 is shown as **Grant**. Event 6273 is shown as **Deny**, including the
 
 ## Search and date semantics
 
-With all search controls blank, the widget requests the newest configured number of NPS events, up to 200.
+With all search controls blank, **Auto-scroll** controls live operation. Enabled, the widget checks for new NPS events once per second and follows the newest rows. Disabled, the current rows remain fixed until Auto-scroll is enabled again or an explicit operation requests a snapshot.
 
 Free text is sent to Zabbix `history.get` as a case-insensitive search against the retained log `value`. Exact Grant/Deny shortcuts are translated to event-ID filters.
 

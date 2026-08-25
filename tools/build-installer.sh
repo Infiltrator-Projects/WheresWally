@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Build the self-extracting WHERE'S WALLY 1.1.4 installer.
+# Build the self-extracting WHERE'S WALLY 1.1.5 installer.
 set -Eeuo pipefail
 
 readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly MODULE_PARENT="$PROJECT_ROOT/module"
-readonly VERSION="1.1.4"
+readonly VERSION="1.1.5"
 readonly OUTPUT_DIR="${1:-$PROJECT_ROOT/dist}"
 readonly OUTPUT_FILE="$OUTPUT_DIR/nps-wheres-wally-zabbix-${VERSION}.run"
 readonly PAYLOAD_FILE="$(mktemp)"
@@ -27,7 +27,7 @@ set -Eeuo pipefail
 
 readonly MODULE_ROOT="${ZABBIX_MODULE_ROOT:-/usr/share/zabbix/modules}"
 readonly MODULE_NAME="nps_wheres_wally"
-readonly MODULE_VERSION="1.1.4"
+readonly MODULE_VERSION="1.1.5"
 readonly MODULE_AUTHOR="Shannon Smith and Carlo Cunanan"
 readonly PAYLOAD_MARKER="__NPS_WALLY_PAYLOAD_BELOW__"
 readonly SELF="$0"
@@ -82,7 +82,8 @@ manifest="$candidate/manifest.json"
 
 grep -Eq '^[[:space:]]*"id"[[:space:]]*:[[:space:]]*"nps_wheres_wally"[[:space:]]*,?[[:space:]]*$' "$manifest" \
     || fail 'Invalid manifest id.'
-grep -Eq '^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"1\.1\.4"[[:space:]]*,?[[:space:]]*$' "$manifest" \
+escaped_module_version="${MODULE_VERSION//./\\.}"
+grep -Eq "^[[:space:]]*\"version\"[[:space:]]*:[[:space:]]*\"${escaped_module_version}\"[[:space:]]*,?[[:space:]]*$" "$manifest" \
     || fail 'Invalid manifest version.'
 grep -Eq '^[[:space:]]*"author"[[:space:]]*:[[:space:]]*"Shannon Smith and Carlo Cunanan"[[:space:]]*,?[[:space:]]*$' "$manifest" \
     || fail 'Invalid manifest author.'

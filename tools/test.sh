@@ -5,7 +5,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODULE_ROOT="$PROJECT_ROOT/module/nps_wheres_wally"
 
 echo "[1/9] Validating manifest JSON"
-jq -e '.id == "nps_wheres_wally" and .version == "1.1.4" and .author == "Shannon Smith and Carlo Cunanan"' \
+jq -e '.id == "nps_wheres_wally" and .version == "1.1.5" and .author == "Shannon Smith and Carlo Cunanan"' \
     "$MODULE_ROOT/manifest.json" >/dev/null
 
 echo "[2/9] Checking PHP syntax"
@@ -26,7 +26,7 @@ php "$PROJECT_ROOT/tests/HistoryQueryBuilderTest.php"
 echo "[6/9] Running receipt-date/timezone regression tests"
 php "$PROJECT_ROOT/tests/ReceiptDateRangeTest.php"
 
-echo "[7/9] Running client export/request regression tests"
+echo "[7/9] Running client live/hold/export regression tests"
 node "$PROJECT_ROOT/tests/WidgetClientTest.js"
 
 echo "[8/9] Checking installer/build scripts"
@@ -39,9 +39,10 @@ if command -v dpkg-deb >/dev/null 2>&1; then
     tmp="$(mktemp -d)"
     trap 'rm -rf "$tmp"' EXIT
     "$PROJECT_ROOT/tools/build-deb.sh" "$tmp" >/dev/null
-    deb="$tmp/nps-wheres-wally-zabbix_1.1.4_all.deb"
+    deb="$tmp/nps-wheres-wally-zabbix_1.1.5_all.deb"
     dpkg-deb --info "$deb" >/dev/null
-    dpkg-deb --contents "$deb" | grep -q 'usr/share/zabbix/modules/nps_wheres_wally/manifest.json'
+    dpkg-deb --contents "$deb" > "$tmp/contents.txt"
+    grep -q 'usr/share/zabbix/modules/nps_wheres_wally/manifest.json' "$tmp/contents.txt"
     rm -rf "$tmp"
     trap - EXIT
 else

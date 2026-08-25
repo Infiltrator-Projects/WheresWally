@@ -70,6 +70,7 @@ $clear_button = (new CTag('button', true, '× '._('Clear')))
 $auto_scroll = (new CTag('input', false))
     ->setAttribute('type', 'checkbox')
     ->setAttribute('checked', 'checked')
+    ->setAttribute('title', _('On: live one-second updates; Off: hold the current event list'))
     ->addClass('nps-wally-autoscroll');
 
 $toolbar = (new CDiv([
@@ -96,7 +97,7 @@ $toolbar = (new CDiv([
                 'title',
                 $data['query_active']
                     ? _('Server-side retained-history search; date bounds use Zabbix receipt time; maximum 200 rows returned')
-                    : _('Updated by the dashboard widget refresh interval')
+                    : _('Auto-scroll on: checks for new NPS events every second; turn it off to hold the current list')
             )
     ]))->addClass('nps-wally-controls')
 ]))->addClass('nps-wally-toolbar');

@@ -4,9 +4,10 @@
  * Copyright (C) 2026 Shannon Smith and Carlo Cunanan
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
- * Normal live refresh is owned by Zabbix. Historical search is user-driven:
- * text/receipt-date criteria are submitted only when Enter is pressed and are
- * added to the ordinary widget update request.
+ * Auto-scroll is the live-feed switch. When enabled, the widget performs a
+ * lightweight one-second poll and follows the newest event. When disabled,
+ * the current rows are held in place. Historical search remains user-driven:
+ * text/receipt-date criteria are submitted only when Enter is pressed.
  */
 class WidgetNpsWheresWally extends CWidget {
 
@@ -16,6 +17,8 @@ class WidgetNpsWheresWally extends CWidget {
     _historicalUpdateRequested = false;
     _clearedBefore = '';
     _autoScrollEnabled = true;
+    _livePollTimer = null;
+    _livePollIntervalMs = 1000;
 
     onInitialize() {
         super.onInitialize();
@@ -26,6 +29,23 @@ class WidgetNpsWheresWally extends CWidget {
         this._historicalUpdateRequested = false;
         this._clearedBefore = '';
         this._autoScrollEnabled = true;
+        this._livePollTimer = null;
+        this._livePollIntervalMs = 1000;
+    }
+
+    onActivate() {
+        super.onActivate();
+        this._syncLivePolling();
+    }
+
+    onDeactivate() {
+        this._stopLivePolling();
+        super.onDeactivate();
+    }
+
+    onDestroy() {
+        this._stopLivePolling();
+        super.onDestroy();
     }
 
     getUpdateRequestData() {
@@ -54,11 +74,18 @@ class WidgetNpsWheresWally extends CWidget {
             }
 
             this._historicalUpdateRequested = false;
-        }
-        else {
-            this._historicalUpdateRequested = false;
+            return super.promiseUpdate();
         }
 
+        // Auto-scroll OFF is a true hold: periodic Zabbix refresh attempts are
+        // deliberately ignored until the operator re-enables the live feed.
+        // A one-shot request is still allowed when Reset search returns from a
+        // historical view so the held display contains a current live snapshot.
+        if (!this._autoScrollEnabled && !this._historicalUpdateRequested) {
+            return Promise.resolve();
+        }
+
+        this._historicalUpdateRequested = false;
         return super.promiseUpdate();
     }
 
@@ -93,6 +120,7 @@ class WidgetNpsWheresWally extends CWidget {
         dateFrom.value = this._dateFrom;
         dateTo.value = this._dateTo;
         autoScroll.checked = this._autoScrollEnabled;
+        this._updateModeIndicator(root);
 
         const submitHistoricalSearch = (event) => {
             if (event.key !== 'Enter') {
@@ -142,7 +170,21 @@ class WidgetNpsWheresWally extends CWidget {
 
             if (this._autoScrollEnabled) {
                 scroller.scrollTop = 0;
+                this._syncLivePolling();
+
+                if (this._state === WIDGET_STATE_ACTIVE && !this._isHistoricalQueryActive()) {
+                    this._startUpdating();
+                }
             }
+            else {
+                this._stopLivePolling();
+
+                if (this._state === WIDGET_STATE_ACTIVE && !this._isHistoricalQueryActive()) {
+                    this._stopUpdating({do_abort: true});
+                }
+            }
+
+            this._updateModeIndicator(root);
         });
 
         root.addEventListener('click', (event) => {
@@ -192,9 +234,74 @@ class WidgetNpsWheresWally extends CWidget {
     _requestHistoricalUpdate() {
         this._historicalUpdateRequested = true;
         this._clearedBefore = '';
+        this._syncLivePolling();
 
         if (this._state === WIDGET_STATE_ACTIVE) {
             this._startUpdating();
+        }
+    }
+
+    _syncLivePolling() {
+        if (this._state === WIDGET_STATE_ACTIVE
+                && this._autoScrollEnabled
+                && !this._isHistoricalQueryActive()) {
+            this._startLivePolling();
+        }
+        else {
+            this._stopLivePolling();
+        }
+    }
+
+    _startLivePolling() {
+        if (this._livePollTimer !== null) {
+            return;
+        }
+
+        this._livePollTimer = setInterval(() => {
+            if (this._state !== WIDGET_STATE_ACTIVE
+                    || !this._autoScrollEnabled
+                    || this._isHistoricalQueryActive()) {
+                return;
+            }
+
+            // CWidgetBase._update() already prevents overlapping requests and
+            // defers while the operator is actively interacting with the widget.
+            this._update();
+        }, this._livePollIntervalMs);
+    }
+
+    _stopLivePolling() {
+        if (this._livePollTimer === null) {
+            return;
+        }
+
+        clearInterval(this._livePollTimer);
+        this._livePollTimer = null;
+    }
+
+    _updateModeIndicator(root) {
+        const indicator = root.querySelector('.nps-wally-live');
+
+        if (indicator === null) {
+            return;
+        }
+
+        indicator.classList.remove('is-live', 'is-search', 'is-hold');
+
+        if (this._isHistoricalQueryActive()) {
+            indicator.textContent = 'SEARCH';
+            indicator.classList.add('is-search');
+            indicator.title = 'Server-side retained-history search; press Enter to refresh the result set';
+        }
+        else if (this._autoScrollEnabled) {
+            indicator.textContent = 'LIVE';
+            indicator.classList.add('is-live');
+            indicator.title = 'Auto-scroll is on: checking for new NPS events every second';
+        }
+        else {
+            indicator.textContent = 'HOLD';
+            indicator.classList.add('is-hold');
+            indicator.title = 'Auto-scroll is off: the current event list is held in place';
         }
     }
 

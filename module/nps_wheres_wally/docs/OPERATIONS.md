@@ -2,7 +2,7 @@
 
 ## Normal live operation
 
-With Search, Received from and Received to blank, WHERE'S WALLY displays the newest NPS events and follows the Zabbix dashboard refresh interval. Recommended Rows value: `200`.
+With Search, Received from and Received to blank, WHERE'S WALLY displays the newest NPS events. With **Auto-scroll** enabled it polls once per second and follows the newest event. Disable **Auto-scroll** to hold the current display completely still. Recommended Rows value: `200`.
 
 ## Historical search
 
@@ -27,7 +27,7 @@ While SEARCH mode is active, the historical query is not repeated on every dashb
 
 **Clear** hides the currently displayed rows in that browser instance; it never deletes monitoring history.
 
-**Auto-scroll** returns the table to the newest row after a content refresh.
+**Auto-scroll** is the live/hold switch. Checked = one-second near-live updates and follow the newest row. Unchecked = hold the current rows in place without periodic replacement.
 
 **Details** expands the raw event and parsed authentication metadata, including Zabbix receipt time.
 

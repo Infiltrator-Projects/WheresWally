@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.5 — 2026-08-25
+
+- Restored the intended Auto-scroll semantics: checked means live feed; unchecked means hold the current display.
+- Added a widget-owned one-second near-live polling loop instead of relying on Zabbix's minimum 10-second dashboard refresh interval.
+- Auto-scroll OFF now stops the live poll, aborts any in-flight live request and prevents periodic Zabbix refreshes from replacing the held rows.
+- Re-enabling Auto-scroll triggers an immediate update and resumes one-second polling.
+- Historical searches remain explicit Enter-key requests and automatically suspend live polling.
+- Added LIVE / HOLD / SEARCH status handling and regression tests for live-hold request gating.
+
 ## 1.1.4 — 2026-08-25
 
 - Added mandatory server-side 6272/6273 filtering before the History API result limit.

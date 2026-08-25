@@ -3,14 +3,14 @@
 **A native Zabbix 7.0 LTS dashboard widget for monitoring Microsoft Network Policy Server authentication events.**
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Release:** 1.1.4  
+**Release:** 1.1.5  
 **Platform:** Zabbix 7.0 LTS  
 **Type:** Zabbix dashboard widget/module  
 **Licence:** GNU General Public License v3.0 or later
 
 WHERE'S WALLY is designed specifically for Zabbix. It installs as a Zabbix frontend module and uses the Zabbix History API to monitor Microsoft NPS authentication events 6272 (granted) and 6273 (denied).
 
-Version 1.1.4 hardens retained-history operation: the server query always constrains results to NPS 6272/6273 before the 200-row limit is applied, receipt-date filtering is interpreted in the Zabbix frontend timezone, CSV export neutralises spreadsheet formula prefixes, and the row-count setting uses Zabbix's bounded integer field type.
+Version 1.1.5 restores the intended live-console behaviour: Auto-scroll ON performs a one-second near-live poll and follows the newest events, while Auto-scroll OFF holds the current event list in place. Retained-history search remains explicit and server-side.
 
 ## Installation
 
@@ -25,7 +25,7 @@ Build the native Debian package:
 Install it with:
 
 ```bash
-sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.4_all.deb
+sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.5_all.deb
 ```
 
 ### Portable installer
@@ -36,7 +36,7 @@ Build the self-extracting installer:
 ./tools/build-installer.sh
 ```
 
-Run the resulting `dist/nps-wheres-wally-zabbix-1.1.4.run` as root.
+Run the resulting `dist/nps-wheres-wally-zabbix-1.1.5.run` as root.
 
 Both installers place the widget under the Zabbix module directory, normally:
 
@@ -45,6 +45,15 @@ Both installers place the widget under the Zabbix module directory, normally:
 ```
 
 Then open **Zabbix → Administration → General → Modules → Scan directory**, enable WHERE'S WALLY, and refresh the browser.
+
+## Live / hold behaviour
+
+With search and receipt-date fields blank, **Auto-scroll** is the live-feed switch:
+
+- checked: the widget checks Zabbix for new NPS events every second and keeps the newest rows in view;
+- unchecked: the current display is held in place and periodic refreshes do not replace it.
+
+Historical searches are always user-driven. Press Enter to execute or refresh a retained-history search.
 
 ## Search behaviour
 

@@ -3,20 +3,13 @@
  *
  * Copyright (C) 2026 Shannon Smith and Carlo Cunanan
  * SPDX-License-Identifier: GPL-3.0-or-later
- *
- * The stylesheet is intentionally scoped beneath .nps-wally (and the Zabbix
- * module wrapper) so it cannot alter unrelated dashboard widgets.
  */
 
-/* Remove the standard widget-body padding so the monitor uses its full area. */
 div.dashboard-widget-nps_wheres_wally {
     padding: 0;
     overflow: hidden;
 }
 
-/* -------------------------------------------------------------------------
- * Design tokens and principal layout
- * ---------------------------------------------------------------------- */
 .nps-wally {
     --nps-bg: #07101f;
     --nps-panel: #0b172a;
@@ -39,9 +32,6 @@ div.dashboard-widget-nps_wheres_wally {
     font-size: 12px;
 }
 
-/* -------------------------------------------------------------------------
- * Header, identity and controls
- * ---------------------------------------------------------------------- */
 .nps-wally-toolbar {
     display: flex;
     align-items: center;
@@ -163,6 +153,15 @@ div.dashboard-widget-nps_wheres_wally {
     box-shadow: 0 0 8px rgba(18, 216, 210, .9);
 }
 
+.nps-wally-live.is-hold {
+    color: var(--nps-muted);
+}
+
+.nps-wally-live.is-hold::before {
+    background: var(--nps-muted);
+    box-shadow: none;
+}
+
 .nps-wally-live::before {
     content: "";
     display: inline-block;
@@ -174,9 +173,6 @@ div.dashboard-widget-nps_wheres_wally {
     box-shadow: 0 0 8px rgba(33, 217, 122, .9);
 }
 
-/* -------------------------------------------------------------------------
- * Scroll container and event table
- * ---------------------------------------------------------------------- */
 .nps-wally-scroller {
     flex: 1 1 auto;
     overflow: auto;
@@ -211,7 +207,6 @@ div.dashboard-widget-nps_wheres_wally {
     text-overflow: ellipsis;
 }
 
-/* Detail rows are interleaved with primary rows, hence the 4n+1 selector. */
 .nps-wally-event-row:nth-child(4n+1) td {
     background: rgba(15, 31, 50, .42);
 }
@@ -220,8 +215,6 @@ div.dashboard-widget-nps_wheres_wally {
     background: rgba(22, 72, 91, .34);
 }
 
-/* Fixed widths preserve scanability while horizontal scrolling remains
- * available on smaller dashboard regions. */
 .nps-wally-table th:nth-child(1),
 .nps-wally-table td:nth-child(1) { width: 54px; }
 .nps-wally-table th:nth-child(2),
@@ -245,9 +238,6 @@ div.dashboard-widget-nps_wheres_wally {
 .nps-wally-table th:nth-child(11),
 .nps-wally-table td:nth-child(11) { width: 70px; }
 
-/* -------------------------------------------------------------------------
- * Result state and event details
- * ---------------------------------------------------------------------- */
 .nps-wally-result {
     display: block;
     padding: 2px 7px;
@@ -318,9 +308,6 @@ div.dashboard-widget-nps_wheres_wally {
     overflow: auto;
 }
 
-/* -------------------------------------------------------------------------
- * Status, empty/error states and responsive behaviour
- * ---------------------------------------------------------------------- */
 .nps-wally-footer {
     display: flex;
     justify-content: space-between;
@@ -364,7 +351,7 @@ div.dashboard-widget-nps_wheres_wally {
     }
 
     .nps-wally-filter,
-.nps-wally-date {
+    .nps-wally-date {
         width: min(100%, 420px);
     }
 }
