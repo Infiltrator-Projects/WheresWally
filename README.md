@@ -1,13 +1,32 @@
-# WHERE'S WALLY — NPS Event Monitor source package
+# WHERE'S WALLY — Zabbix NPS Event Monitor
+
+**A native Zabbix 7.0 LTS dashboard widget for monitoring Microsoft Network Policy Server authentication events.**
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
 **Release:** 1.1.3  
 **Platform:** Zabbix 7.0 LTS  
+**Type:** Zabbix dashboard widget/module  
 **Licence:** GNU General Public License v3.0 or later
 
-This repository contains the production Zabbix module, regression tests, documentation and installer tooling for WHERE'S WALLY — NPS Event Monitor.
+WHERE'S WALLY is designed specifically for Zabbix. It installs as a Zabbix frontend module and uses the Zabbix API and retained log history to monitor Microsoft NPS authentication events 6272 (granted) and 6273 (denied).
 
-The widget monitors Microsoft Network Policy Server authentication events 6272 and 6273. Version 1.1.3 adds bounded server-side search across retained Zabbix log history, optional date-range filtering and explicit Enter-to-search behaviour while preserving the lightweight live view.
+Version 1.1.3 provides bounded server-side search across retained Zabbix log history, optional date-range filtering, CSV export, expandable event details and explicit Enter-to-search behaviour while preserving the lightweight live view.
+
+## Zabbix integration
+
+The production module lives in `module/nps_wheres_wally/` and is installed under the Zabbix module directory, normally:
+
+```text
+/usr/share/zabbix/modules/nps_wheres_wally
+```
+
+After installation, enable it from:
+
+```text
+Zabbix → Administration → General → Modules → Scan directory
+```
+
+The widget reads NPS event data through the Zabbix History API rather than connecting directly to the Zabbix database.
 
 ## Repository layout
 
@@ -32,7 +51,11 @@ The installed module includes operational and technical documentation under `mod
 ./tools/build-installer.sh
 ```
 
-The resulting installer is written to `dist/nps-wheres-wally-zabbix-1.1.3.run`.
+The resulting installer is written to:
+
+```text
+dist/nps-wheres-wally-zabbix-1.1.3.run
+```
 
 ## Release behaviour
 
