@@ -593,7 +593,8 @@ div.dashboard-widget-nps_wheres_wally {
 }
 
 .nps-wally-updated,
-.nps-wally-limit {
+.nps-wally-limit,
+.nps-wally-build {
     padding-left: 8px;
     border-left: 1px solid var(--nps-line);
 }

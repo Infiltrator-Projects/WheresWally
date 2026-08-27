@@ -370,7 +370,13 @@ $footer_items = [
     (new CSpan(_('Updated')))
         ->addClass('nps-wally-updated')
         ->setAttribute('data-prefix', _('Updated'))
-        ->setAttribute('aria-live', 'polite')
+        ->setAttribute('aria-live', 'polite'),
+    (new CSpan(_('Build').': '._('Generic / architecture-independent')))
+        ->addClass('nps-wally-build')
+        ->setAttribute(
+            'title',
+            _('This Zabbix module is platform-independent PHP/JavaScript, not a native machine-code build')
+        )
 ];
 
 if ($limit_text !== '') {
