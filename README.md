@@ -3,14 +3,14 @@
 **A native Zabbix 7.0 LTS dashboard widget for monitoring Microsoft Network Policy Server authentication events.**
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Release:** 1.1.8  
+**Release:** 1.1.9  
 **Platform:** Zabbix 7.0 LTS  
 **Type:** Zabbix dashboard widget/module  
 **Licence:** GNU General Public License v3.0 or later
 
 WHERE'S WALLY installs as a Zabbix frontend module and uses Zabbix APIs to display Microsoft NPS Security events 6272 (Grant) and 6273 (Deny).
 
-Version 1.1.8 is the runtime hotfix for the AP-correlation work introduced in 1.1.7. It corrects two symbol typos that could leave the widget on Zabbix's loading spinner, and adds a source-contract regression test so undefined helper methods or private constants are caught before release. The correlation policy itself remains conservative: exact inventory MAC/BSSID first, exact current host-interface IP as fallback, with the original NPS event retained in Details.
+Version 1.1.9 adds an explicit `Generic / architecture-independent` build identity in the widget so the delivery model is visible alongside compiled applications.\n\nVersion 1.1.8 is the runtime hotfix for the AP-correlation work introduced in 1.1.7. It corrects two symbol typos that could leave the widget on Zabbix's loading spinner, and adds a source-contract regression test so undefined helper methods or private constants are caught before release. The correlation policy itself remains conservative: exact inventory MAC/BSSID first, exact current host-interface IP as fallback, with the original NPS event retained in Details.
 
 ## Installation
 
@@ -18,14 +18,14 @@ Version 1.1.8 is the runtime hotfix for the AP-correlation work introduced in 1.
 
 ```bash
 ./tools/build-deb.sh
-sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.8_all.deb
+sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.9_all.deb
 ```
 
 ### Portable installer
 
 ```bash
 ./tools/build-installer.sh
-sudo ./dist/nps-wheres-wally-zabbix-1.1.8.run
+sudo ./dist/nps-wheres-wally-zabbix-1.1.9.run
 ```
 
 Both installers normally install to `/usr/share/zabbix/modules/nps_wheres_wally`. Then open **Zabbix → Administration → General → Modules → Scan directory**, enable WHERE'S WALLY, and refresh the browser.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.9 — 2026-08-27
+
+- Added an explicit visible build identity to the widget footer.
+- Identifies the Zabbix module as Generic / architecture-independent because it is PHP/JavaScript rather than CPU-native machine code.
+- Added matching Debian package metadata without changing monitoring behaviour.
+
 ## 1.1.8 — 2026-08-25
 
 - Fixed two v1.1.7 runtime symbol typos that caused the Zabbix widget request to fail and remain on the loading spinner.
