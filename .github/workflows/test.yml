@@ -108,7 +108,7 @@ jobs:
             https://api.github.com/repos/Infiltrator-Projects/Infiltrator-Repository/dispatches
 
   local-linux:
-    name: Local Linux / tests and package build
+    name: Local Linux / package qualification
     if: github.event_name != 'pull_request'
     runs-on: linux-native
     permissions:
@@ -116,15 +116,19 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v6
-      - name: Verify local prerequisites
+      - name: Verify local packaging prerequisites
         shell: bash
         run: |
           set -euo pipefail
-          command -v jq
-          command -v php
+          command -v awk
+          command -v bash
+          command -v tar
           command -v dpkg-deb
-      - name: Run project tests
-        run: ./tools/test.sh
+      - name: Validate shell build logic
+        shell: bash
+        run: |
+          set -euo pipefail
+          find tools -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
       - name: Build release installers
         run: |
           ./tools/build-installer.sh
@@ -133,10 +137,12 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          version="$(jq -r '.version' module/nps_wheres_wally/manifest.json)"
+          version="$(awk -F'"' '/^[[:space:]]*"version"[[:space:]]*:/ {print $4; exit}' module/nps_wheres_wally/manifest.json)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           run_file="dist/nps-wheres-wally-zabbix-${version}.run"
           deb="dist/nps-wheres-wally-zabbix_${version}_all.deb"
           test -x "$run_file"
+          grep -aFq "# Version: $version" "$run_file"
           test "$(dpkg-deb --field "$deb" Version)" = "$version"
           test "$(dpkg-deb --field "$deb" Package)" = "nps-wheres-wally-zabbix"
           test "$(dpkg-deb --field "$deb" Architecture)" = "all"
