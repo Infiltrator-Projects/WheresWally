@@ -106,3 +106,37 @@ jobs:
             --header "X-GitHub-Api-Version: 2022-11-28" \
             --data "$payload" \
             https://api.github.com/repos/Infiltrator-Projects/Infiltrator-Repository/dispatches
+
+  local-linux:
+    name: Local Linux / tests and package build
+    if: github.event_name != 'pull_request'
+    runs-on: linux-native
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+      - name: Verify local prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v jq
+          command -v php
+          command -v dpkg-deb
+      - name: Run project tests
+        run: ./tools/test.sh
+      - name: Build release installers
+        run: |
+          ./tools/build-installer.sh
+          ./tools/build-deb.sh
+      - name: Inspect release artifacts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          version="$(jq -r '.version' module/nps_wheres_wally/manifest.json)"
+          run_file="dist/nps-wheres-wally-zabbix-${version}.run"
+          deb="dist/nps-wheres-wally-zabbix_${version}_all.deb"
+          test -x "$run_file"
+          test "$(dpkg-deb --field "$deb" Version)" = "$version"
+          test "$(dpkg-deb --field "$deb" Package)" = "nps-wheres-wally-zabbix"
+          test "$(dpkg-deb --field "$deb" Architecture)" = "all"
