@@ -55,7 +55,7 @@ Architecture: $ARCHITECTURE
 Maintainer: Shannon Smith and Carlo Cunanan
 X-Wheres-Wally-Build: generic-all
 Depends: zabbix-frontend-php (>= 7.0)
-Homepage: https://github.com/The-First-Infiltrator/WheresWally
+Homepage: https://github.com/Infiltrator-Projects/WheresWally
 Description: Zabbix NPS 6272/6273 authentication event monitor
  WHERE'S WALLY is a Zabbix 7.0 LTS dashboard widget for Microsoft
  Network Policy Server authentication events 6272 and 6273.
