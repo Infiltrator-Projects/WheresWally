@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.10 — 2026-09-02
+
+- Freshly rebuilt and republished the current qualified Zabbix module.
+- Preserved the 1.1.9 architecture-independent build identity and monitoring semantics.
+- Re-ran installer, Debian package, PHP, JavaScript and source-contract qualification.
+
 ## 1.1.9 — 2026-08-27
 
 - Added an explicit visible build identity to the widget footer.
