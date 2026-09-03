@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.12 — 2026-09-04
+
+- Reworked live AP correlation so each refresh uses at most one batched interface-IP lookup and one batched host-inventory scan instead of repeated per-BSSID searches.
+- Removed the 16-BSSID enrichment ceiling, so a 200-row view can resolve every distinct AP without silently abandoning later rows.
+- Made duplicate current interface-IP and duplicate inventory-MAC identities fail closed as `Ambiguous in Zabbix` instead of selecting an arbitrary host.
+- Added source-contract checks that forbid the retired per-BSSID lookup path.
+- Removed duplicated CI build/inspection work and limited GitHub contents write permission to the release job.
+
 ## 1.1.11 — 2026-09-03
 
 - Rebuilt and requalified the current module on GitHub-hosted CI for the coordinated project release refresh.
