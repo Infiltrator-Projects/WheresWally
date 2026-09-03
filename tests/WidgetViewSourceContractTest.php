@@ -12,12 +12,6 @@ if ($source === false) {
     exit(1);
 }
 
-/*
- * WidgetView depends on Zabbix frontend classes and cannot be instantiated in
- * this portable unit-test process. Static source-contract checks therefore
- * validate the two symbol classes that PHP's syntax checker cannot catch:
- * helper-method references and private self constants.
- */
 preg_match_all('/AccessPointIdentity::([A-Za-z_][A-Za-z0-9_]*)\s*\(/', $source, $method_matches);
 $available_methods = get_class_methods(AccessPointIdentity::class);
 
@@ -35,6 +29,28 @@ $declared = array_unique($declared_matches[1] ?? []);
 foreach (array_unique($used_matches[1] ?? []) as $constant) {
     if (!in_array($constant, $declared, true)) {
         fwrite(STDERR, "FAIL: WidgetView references undefined self::{$constant}\n");
+        exit(1);
+    }
+}
+
+foreach ([
+    'hostsByInterfaceIpCandidates',
+    'uniqueHostsByInventoryMac',
+    "_('Ambiguous in Zabbix')"
+] as $required) {
+    if (strpos($source, $required) === false) {
+        fwrite(STDERR, "FAIL: hardened AP-correlation contract is missing {$required}.\n");
+        exit(1);
+    }
+}
+
+foreach ([
+    'MAXIMUM_MAC_FALLBACK_LOOKUPS',
+    'findHostByInventoryMac',
+    'searchInventory'
+] as $forbidden) {
+    if (strpos($source, $forbidden) !== false) {
+        fwrite(STDERR, "FAIL: per-BSSID AP lookup path returned: {$forbidden}.\n");
         exit(1);
     }
 }
