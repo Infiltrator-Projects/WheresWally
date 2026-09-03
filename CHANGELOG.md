@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.11 — 2026-09-03
+
+- Rebuilt and requalified the current module on GitHub-hosted CI for the coordinated project release refresh.
+- Preserved the 1.1.10 monitoring, retained-history, AP-correlation and CSV semantics unchanged.
+
 ## 1.1.10 — 2026-09-02
 
 - Freshly rebuilt and republished the current qualified Zabbix module.

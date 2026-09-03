@@ -3,7 +3,7 @@
 **A native Zabbix 7.0 LTS dashboard widget for monitoring Microsoft Network Policy Server authentication events.**
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Release:** 1.1.10  
+**Release:** 1.1.11  
 **Platform:** Zabbix 7.0 LTS  
 **Type:** Zabbix dashboard widget/module  
 **Licence:** GNU General Public License v3.0 or later

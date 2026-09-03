@@ -1,7 +1,7 @@
 # WHERE'S WALLY — NPS Event Monitor
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Version:** 1.1.10  
+**Version:** 1.1.11  
 **Target platform:** Zabbix 7.0 LTS  
 **Licence:** GNU General Public License v3.0 or later
 
