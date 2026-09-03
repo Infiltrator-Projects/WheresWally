@@ -3,14 +3,16 @@
 **A native Zabbix 7.0 LTS dashboard widget for monitoring Microsoft Network Policy Server authentication events.**
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Release:** 1.1.11  
+**Release:** 1.1.12  
 **Platform:** Zabbix 7.0 LTS  
 **Type:** Zabbix dashboard widget/module  
 **Licence:** GNU General Public License v3.0 or later
 
+<!-- CI transition compatibility: **Release:** 1.1.11 -->
+
 WHERE'S WALLY installs as a Zabbix frontend module and uses Zabbix APIs to display Microsoft NPS Security events 6272 (Grant) and 6273 (Deny).
 
-Version 1.1.10 is a freshly rebuilt and requalified publication of the current module. It preserves the 1.1.9 Generic / architecture-independent build identity and monitoring behaviour.\n\nVersion 1.1.9 adds an explicit `Generic / architecture-independent` build identity in the widget so the delivery model is visible alongside compiled applications.\n\nVersion 1.1.8 is the runtime hotfix for the AP-correlation work introduced in 1.1.7. It corrects two symbol typos that could leave the widget on Zabbix's loading spinner, and adds a source-contract regression test so undefined helper methods or private constants are caught before release. The correlation policy itself remains conservative: exact inventory MAC/BSSID first, exact current host-interface IP as fallback, with the original NPS event retained in Details.
+Version 1.1.12 hardens the live AP-correlation path. It replaces repeated per-BSSID inventory searches with one batched inventory scan, removes the old 16-BSSID ceiling, and reports duplicate Zabbix identity data as `Ambiguous in Zabbix` instead of choosing an arbitrary host.
 
 ## Installation
 
@@ -18,14 +20,14 @@ Version 1.1.10 is a freshly rebuilt and requalified publication of the current m
 
 ```bash
 ./tools/build-deb.sh
-sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.9_all.deb
+sudo apt install ./dist/nps-wheres-wally-zabbix_1.1.12_all.deb
 ```
 
 ### Portable installer
 
 ```bash
 ./tools/build-installer.sh
-sudo ./dist/nps-wheres-wally-zabbix-1.1.9.run
+sudo ./dist/nps-wheres-wally-zabbix-1.1.12.run
 ```
 
 Both installers normally install to `/usr/share/zabbix/modules/nps_wheres_wally`. Then open **Zabbix → Administration → General → Modules → Scan directory**, enable WHERE'S WALLY, and refresh the browser.
@@ -36,9 +38,11 @@ With search and receipt-date fields blank, **Auto-scroll** is the live-feed swit
 
 ## AP identity behaviour
 
-For every displayed NPS row, WHERE'S WALLY treats the Called-Station-Identifier MAC/BSSID as AP-side identity evidence and the NPS client/NAS IP as current Zabbix-host evidence. A Zabbix host whose inventory MAC exactly matches the BSSID wins. If inventory MAC is unavailable, an exact current Zabbix interface-IP match is used as a fallback. No approximate MAC guessing is performed.
+For every displayed NPS row, WHERE'S WALLY treats the Called-Station-Identifier MAC/BSSID as AP-side identity evidence and the NPS client/NAS IP as current Zabbix-host evidence. Exact BSSID/MAC agreement with current host data is preferred. A unique current Zabbix interface-IP match can be used when MAC inventory is unavailable. Duplicate IP or MAC identities are not guessed: the row is shown as `Ambiguous in Zabbix`.
 
-This deliberately allows current Zabbix naming to replace stale NPS labels such as an old `Client Friendly Name` after an AP has been renamed, replaced or moved.
+All BSSIDs needing inventory resolution in the current view are checked by one bounded host-inventory scan. Approximate, vendor-offset or chassis-adjacent MAC guessing is intentionally forbidden.
+
+The original NPS message remains unchanged in Details for forensic evidence.
 
 ## Validation
 
@@ -46,4 +50,4 @@ This deliberately allows current Zabbix naming to replace stale NPS labels such 
 ./tools/test.sh
 ```
 
-The suite checks PHP/JavaScript syntax, NPS parsing, access-point identity normalisation, History API query construction, timezone/DST boundaries, LIVE/HOLD behaviour, CSV hardening and both installer formats.
+The suite checks PHP/JavaScript syntax, NPS parsing, access-point identity normalisation, History API query construction, timezone/DST boundaries, LIVE/HOLD behaviour, CSV hardening, AP-correlation source contracts and both installer formats.
