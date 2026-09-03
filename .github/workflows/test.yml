@@ -7,18 +7,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out source
         uses: actions/checkout@v6
 
       - name: Install test dependencies
-        run: sudo apt-get update && sudo apt-get install -y jq php-cli
+        run: sudo apt-get update && sudo apt-get install -y jq php-cli nodejs
 
       - name: Run project tests
         run: ./tools/test.sh
@@ -35,8 +34,8 @@ jobs:
           version="$(jq -r '.version' module/nps_wheres_wally/manifest.json)"
           run_file="dist/nps-wheres-wally-zabbix-${version}.run"
           deb="dist/nps-wheres-wally-zabbix_${version}_all.deb"
-
           test -x "$run_file"
+          grep -aFq "# Version: $version" "$run_file"
           test "$(dpkg-deb --field "$deb" Version)" = "$version"
           test "$(dpkg-deb --field "$deb" Package)" = "nps-wheres-wally-zabbix"
           test "$(dpkg-deb --field "$deb" Architecture)" = "all"
@@ -61,8 +60,23 @@ jobs:
             dist/*.run
           if-no-files-found: error
 
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release ')
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Download tested installers
+        uses: actions/download-artifact@v4
+        with:
+          name: wheres-wally-installers
+          path: dist
+
       - name: Publish GitHub release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release ')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -82,14 +96,11 @@ jobs:
               --generate-notes
           fi
 
-          # Remove the one-off publishing ref used while preparing this release.
-          # A missing ref is harmless on future release runs.
           gh api -X DELETE \
             "repos/${GITHUB_REPOSITORY}/git/refs/heads/__tmp_test_tree" \
             >/dev/null 2>&1 || true
 
       - name: Refresh and verify Infiltrator APT repository
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'Release ')
         env:
           DISPATCH_TOKEN: ${{ secrets.APT_REPOSITORY_DISPATCH_TOKEN }}
           RELEASE_SHA: ${{ github.sha }}
@@ -108,11 +119,12 @@ jobs:
               --header "X-GitHub-Api-Version: 2022-11-28" \
               --data "$payload" \
               https://api.github.com/repos/Infiltrator-Projects/Infiltrator-Repository/dispatches; then
-              echo "::warning::Immediate APT dispatch failed; waiting for the repository's five-minute safety refresh."
+              echo "::warning::Immediate APT dispatch failed; waiting for the repository safety refresh."
             fi
           else
-            echo "::warning::Immediate APT dispatch token is unavailable; waiting for the repository's five-minute safety refresh."
+            echo "::warning::Immediate APT dispatch token is unavailable; waiting for the repository safety refresh."
           fi
+
           catalogue='https://infiltrator-projects.github.io/Infiltrator-Repository/catalogue/apps.json'
           for attempt in $(seq 1 72); do
             if curl -fsS --retry 2 --retry-delay 1 "$catalogue?release=$RELEASE_SHA&attempt=$attempt" \
@@ -124,38 +136,5 @@ jobs:
             echo "Waiting for APT publication of $APP_ID $VERSION ($attempt/72)..."
             sleep 10
           done
-          echo "::error::GitHub release was published, but the central APT repository did not advertise $APP_ID $VERSION within 12 minutes."
+          echo "::error::GitHub release was published, but the central APT repository did not advertise $APP_ID $VERSION."
           exit 1
-
-      - name: Check out source
-        uses: actions/checkout@v6
-      - name: Verify local packaging prerequisites
-        shell: bash
-        run: |
-          set -euo pipefail
-          command -v awk
-          command -v bash
-          command -v tar
-          command -v dpkg-deb
-      - name: Validate shell build logic
-        shell: bash
-        run: |
-          set -euo pipefail
-          find tools -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
-      - name: Build release installers
-        run: |
-          ./tools/build-installer.sh
-          ./tools/build-deb.sh
-      - name: Inspect release artifacts
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          version="$(awk -F'"' '/^[[:space:]]*"version"[[:space:]]*:/ {print $4; exit}' module/nps_wheres_wally/manifest.json)"
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          run_file="dist/nps-wheres-wally-zabbix-${version}.run"
-          deb="dist/nps-wheres-wally-zabbix_${version}_all.deb"
-          test -x "$run_file"
-          grep -aFq "# Version: $version" "$run_file"
-          test "$(dpkg-deb --field "$deb" Version)" = "$version"
-          test "$(dpkg-deb --field "$deb" Package)" = "nps-wheres-wally-zabbix"
-          test "$(dpkg-deb --field "$deb" Architecture)" = "all"
