@@ -238,6 +238,7 @@ div.dashboard-widget-nps_wheres_wally {
 }
 
 .nps-wally-date-group,
+.nps-wally-result-group,
 .nps-wally-action-group {
     display: flex;
     align-items: flex-end;
@@ -246,6 +247,14 @@ div.dashboard-widget-nps_wheres_wally {
 }
 
 .nps-wally-date-label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    color: var(--nps-muted);
+    white-space: nowrap;
+}
+
+.nps-wally-select-label {
     display: flex;
     flex-direction: column;
     gap: 3px;
@@ -263,7 +272,8 @@ div.dashboard-widget-nps_wheres_wally {
 }
 
 .nps-wally-filter,
-.nps-wally-date {
+.nps-wally-date,
+.nps-wally-select {
     box-sizing: border-box;
     height: 32px;
     border: 1px solid #29465e;
@@ -292,8 +302,16 @@ div.dashboard-widget-nps_wheres_wally {
     color-scheme: dark;
 }
 
+.nps-wally-select {
+    min-width: 112px;
+    padding: 4px 25px 4px 7px;
+    border-radius: var(--nps-radius);
+    color-scheme: dark;
+}
+
 .nps-wally-filter:focus,
-.nps-wally-date:focus {
+.nps-wally-date:focus,
+.nps-wally-select:focus {
     border-color: var(--nps-cyan);
     background: #0d1c30;
     box-shadow: 0 0 0 2px rgba(25, 215, 210, .13);
@@ -352,6 +370,7 @@ div.dashboard-widget-nps_wheres_wally {
 .nps-wally-details-button:focus-visible,
 .nps-wally-filter:focus-visible,
 .nps-wally-date:focus-visible,
+.nps-wally-select:focus-visible,
 .nps-wally-scroller:focus-visible {
     outline: 2px solid var(--nps-cyan);
     outline-offset: 1px;
@@ -674,6 +693,7 @@ div.dashboard-widget-nps_wheres_wally {
     }
 
     .nps-wally-date-group,
+    .nps-wally-result-group,
     .nps-wally-action-group {
         flex-wrap: wrap;
     }
@@ -699,6 +719,7 @@ div.dashboard-widget-nps_wheres_wally {
     .nps-wally-switch-track::after,
     .nps-wally-filter,
     .nps-wally-date,
+    .nps-wally-select,
     .nps-wally-button,
     .nps-wally-details-button {
         transition: none;

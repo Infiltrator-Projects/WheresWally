@@ -1,7 +1,7 @@
 # WHERE'S WALLY — NPS Event Monitor
 
 **Authors and maintainers:** Shannon Smith and Carlo Cunanan  
-**Version:** 1.1.12  
+**Version:** 1.1.13
 **Target platform:** Zabbix 7.0 LTS  
 **Licence:** GNU General Public License v3.0 or later
 
@@ -21,6 +21,8 @@ WHERE'S WALLY is a custom Zabbix dashboard widget for Microsoft NPS authenticati
 - explicit unresolved state when no current Zabbix host can be correlated;
 - one-second LIVE view with true HOLD when Auto-scroll is disabled;
 - retained-history search and receipt-date filtering;
+- live Result filtering for All, Deny only or Grant only;
+- newest-first, Deny-first and Grant-first result ordering;
 - maximum 200 returned rows;
 - spreadsheet-safe CSV export, non-destructive Clear and expandable raw event details.
 

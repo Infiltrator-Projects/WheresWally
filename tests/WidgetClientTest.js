@@ -75,4 +75,18 @@ widget._explicitUpdateRequested = true;
 widget.promiseUpdate();
 same('Explicit historical search is allowed.', widget._stubUpdateCount, 2);
 
+widget._resultSort = 'deny-first';
+const newestGrant = {dataset: {result: 'Grant', receivedKey: '00000000000000000020'}};
+const olderDeny = {dataset: {result: 'Deny', receivedKey: '00000000000000000010'}};
+same('Deny-first sort places Deny before a newer Grant.',
+    widget._compareEventRows(olderDeny, newestGrant) < 0, true);
+
+widget._resultSort = 'grant-first';
+same('Grant-first sort places Grant before Deny.',
+    widget._compareEventRows(newestGrant, olderDeny) < 0, true);
+
+widget._resultSort = 'newest';
+same('Newest sort uses descending fixed-width receipt keys.',
+    widget._compareEventRows(newestGrant, olderDeny) < 0, true);
+
 console.log('WidgetClientTest: all assertions passed.');

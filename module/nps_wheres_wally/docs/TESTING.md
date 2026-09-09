@@ -21,7 +21,7 @@
 
 ## Client regression
 
-`tests/WidgetClientTest.js` executes the widget class in a minimal Node test harness. It verifies spreadsheet-formula neutralisation in CSV cells, confirms date strings are sent to PHP without browser-local epoch conversion, verifies formula-like CSV cells including whitespace-prefixed payloads, and verifies that Auto-scroll OFF suppresses live refreshes while explicit one-shot and historical requests still run.
+`tests/WidgetClientTest.js` executes the widget class in a minimal Node test harness. It verifies spreadsheet-formula neutralisation in CSV cells, confirms date strings are sent to PHP without browser-local epoch conversion, verifies formula-like CSV cells including whitespace-prefixed payloads, verifies Result grouping order, and verifies that Auto-scroll OFF suppresses live refreshes while explicit one-shot and historical requests still run.
 
 ## Package validation
 
@@ -47,6 +47,15 @@ When `dpkg-deb` is available, `tools/test.sh` builds the `.deb`, validates its m
 9. Leave SEARCH mode open through several dashboard refresh intervals and confirm the displayed result set is not repeatedly replaced.
 10. Choose Reset search and confirm normal live updating resumes.
 11. Verify Clear, Details and CSV Export still operate.
+
+## Result filter and sort acceptance
+
+1. Select **Deny only** and confirm Grant rows are hidden while one-second LIVE updates continue.
+2. Select **Grant only** and confirm Deny rows are hidden.
+3. Return to **All results**, select **Deny first**, and confirm Deny rows appear before Grant rows with newest events first inside both groups.
+4. Select **Grant first** and confirm the grouping reverses without separating any event from its Details row.
+5. Allow a live refresh and confirm both selected controls and their visible ordering remain active.
+6. Export CSV and confirm it contains only the currently visible rows in their displayed order.
 
 ## Running source tests
 

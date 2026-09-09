@@ -70,6 +70,26 @@ $date_to = (new CTag('input', false))
     ->addClass('nps-wally-date')
     ->addClass('nps-wally-date-to');
 
+$result_filter = (new CTag('select', true, [
+    (new CTag('option', true, _('All results')))->setAttribute('value', 'all'),
+    (new CTag('option', true, _('Deny only')))->setAttribute('value', 'deny'),
+    (new CTag('option', true, _('Grant only')))->setAttribute('value', 'grant')
+]))
+    ->setAttribute('aria-label', _('Filter by result'))
+    ->setAttribute('title', _('Show all results, Deny events only, or Grant events only'))
+    ->addClass('nps-wally-select')
+    ->addClass('nps-wally-result-filter');
+
+$result_sort = (new CTag('select', true, [
+    (new CTag('option', true, _('Newest first')))->setAttribute('value', 'newest'),
+    (new CTag('option', true, _('Deny first')))->setAttribute('value', 'deny-first'),
+    (new CTag('option', true, _('Grant first')))->setAttribute('value', 'grant-first')
+]))
+    ->setAttribute('aria-label', _('Sort results'))
+    ->setAttribute('title', _('Sort by newest event or group Deny or Grant events first'))
+    ->addClass('nps-wally-select')
+    ->addClass('nps-wally-result-sort');
+
 $reset_search_button = (new CTag('button', true, _('Reset')))
     ->setAttribute('type', 'button')
     ->setAttribute('title', _('Clear search criteria and return to the live/hold view'))
@@ -150,6 +170,17 @@ $date_group = (new CDiv([
     ]))->addClass('nps-wally-date-label')
 ]))->addClass('nps-wally-date-group');
 
+$result_group = (new CDiv([
+    (new CTag('label', true, [
+        (new CSpan(_('Result filter')))->addClass('nps-wally-field-label'),
+        $result_filter
+    ]))->addClass('nps-wally-select-label'),
+    (new CTag('label', true, [
+        (new CSpan(_('Sort')))->addClass('nps-wally-field-label'),
+        $result_sort
+    ]))->addClass('nps-wally-select-label')
+]))->addClass('nps-wally-result-group');
+
 $action_group = (new CDiv([
     $reset_search_button,
     $export_button,
@@ -159,6 +190,7 @@ $action_group = (new CDiv([
 $toolbar_controls = (new CDiv([
     $search_group,
     $date_group,
+    $result_group,
     $action_group
 ]))->addClass('nps-wally-controls');
 

@@ -38,6 +38,12 @@ class WidgetNpsWheresWally extends CWidget {
     _dateFrom = '';
     _dateTo = '';
 
+    // Browser-local presentation controls. These deliberately do not turn the
+    // widget into SEARCH mode: filtering and grouping continue to follow the
+    // one-second live result set.
+    _resultFilter = 'all';
+    _resultSort = 'newest';
+
     // Permission for the next framework update. The flag is also used for the
     // one-shot live snapshot requested when a held historical view is reset.
     _explicitUpdateRequested = false;
@@ -62,6 +68,8 @@ class WidgetNpsWheresWally extends CWidget {
         this._searchText = '';
         this._dateFrom = '';
         this._dateTo = '';
+        this._resultFilter = 'all';
+        this._resultSort = 'newest';
         this._explicitUpdateRequested = false;
         this._clearedBefore = '';
         this._autoScrollEnabled = true;
@@ -175,6 +183,8 @@ class WidgetNpsWheresWally extends CWidget {
         const searchButton = root.querySelector('.nps-wally-search-button');
         const dateFrom = root.querySelector('.nps-wally-date-from');
         const dateTo = root.querySelector('.nps-wally-date-to');
+        const resultFilter = root.querySelector('.nps-wally-result-filter');
+        const resultSort = root.querySelector('.nps-wally-result-sort');
         const resetSearch = root.querySelector('.nps-wally-search-reset');
         const exportButton = root.querySelector('.nps-wally-export');
         const clearButton = root.querySelector('.nps-wally-clear');
@@ -182,6 +192,7 @@ class WidgetNpsWheresWally extends CWidget {
         const scroller = root.querySelector('.nps-wally-scroller');
 
         if (search === null || searchButton === null || dateFrom === null || dateTo === null
+                || resultFilter === null || resultSort === null
                 || resetSearch === null || exportButton === null || clearButton === null
                 || autoScroll === null || scroller === null) {
             return;
@@ -192,6 +203,8 @@ class WidgetNpsWheresWally extends CWidget {
         search.value = this._searchText;
         dateFrom.value = this._dateFrom;
         dateTo.value = this._dateTo;
+        resultFilter.value = this._resultFilter;
+        resultSort.value = this._resultSort;
         autoScroll.checked = this._autoScrollEnabled;
 
         this._updateModeIndicator(root);
@@ -227,6 +240,16 @@ class WidgetNpsWheresWally extends CWidget {
         dateFrom.addEventListener('keydown', runSearchOnEnter);
         dateTo.addEventListener('keydown', runSearchOnEnter);
         searchButton.addEventListener('click', runSearch);
+
+        resultFilter.addEventListener('change', () => {
+            this._resultFilter = resultFilter.value;
+            this._applyVisibilityRules(root);
+        });
+
+        resultSort.addEventListener('change', () => {
+            this._resultSort = resultSort.value;
+            this._applyVisibilityRules(root);
+        });
 
         resetSearch.addEventListener('click', () => {
             this._searchText = '';
@@ -305,6 +328,8 @@ class WidgetNpsWheresWally extends CWidget {
      * the parent event when it falls behind the Clear boundary.
      */
     _applyVisibilityRules(root) {
+        this._sortEventRows(root);
+
         let visibleCount = 0;
         let grantCount = 0;
         let denyCount = 0;
@@ -313,15 +338,19 @@ class WidgetNpsWheresWally extends CWidget {
             const receivedKey = row.dataset.receivedKey || '';
             const isAfterClear = this._clearedBefore === ''
                 || receivedKey > this._clearedBefore;
+            const result = (row.dataset.result || '').toLowerCase();
+            const matchesResult = this._resultFilter === 'all'
+                || result === this._resultFilter;
+            const isVisible = isAfterClear && matchesResult;
             const detailRow = row.nextElementSibling;
 
-            row.hidden = !isAfterClear;
+            row.hidden = !isVisible;
 
-            if (detailRow?.classList.contains('nps-wally-detail-row') && !isAfterClear) {
+            if (detailRow?.classList.contains('nps-wally-detail-row') && !isVisible) {
                 detailRow.hidden = true;
             }
 
-            if (!isAfterClear) {
+            if (!isVisible) {
                 continue;
             }
 
@@ -336,6 +365,48 @@ class WidgetNpsWheresWally extends CWidget {
         }
 
         this._updateVisibleSummary(root, visibleCount, grantCount, denyCount);
+    }
+
+    /**
+     * Keep each event and its detail row together while ordering the current
+     * result set. Deny/Grant grouping uses newest-first as its deterministic
+     * secondary order, so fresh failures remain at the top of the chosen group.
+     */
+    _sortEventRows(root) {
+        const body = root.querySelector('.nps-wally-table tbody');
+
+        if (body === null) {
+            return;
+        }
+
+        const rows = [...body.querySelectorAll('.nps-wally-event-row')];
+        rows.sort((left, right) => this._compareEventRows(left, right));
+
+        for (const row of rows) {
+            const detailRow = row.nextElementSibling;
+            body.appendChild(row);
+
+            if (detailRow?.classList.contains('nps-wally-detail-row')) {
+                body.appendChild(detailRow);
+            }
+        }
+    }
+
+    /** Compare two event rows using the selected result grouping and timestamp. */
+    _compareEventRows(left, right) {
+        const leftResult = (left.dataset.result || '').toLowerCase();
+        const rightResult = (right.dataset.result || '').toLowerCase();
+
+        if (this._resultSort === 'deny-first' && leftResult !== rightResult) {
+            return leftResult === 'deny' ? -1 : 1;
+        }
+
+        if (this._resultSort === 'grant-first' && leftResult !== rightResult) {
+            return leftResult === 'grant' ? -1 : 1;
+        }
+
+        return (right.dataset.receivedKey || '')
+            .localeCompare(left.dataset.receivedKey || '');
     }
 
     /**

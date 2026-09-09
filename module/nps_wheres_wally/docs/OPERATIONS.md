@@ -31,6 +31,8 @@ While SEARCH mode is active, the historical query is not repeated on every dashb
 
 **Details** expands the raw event and parsed authentication metadata, including Zabbix receipt time. The footer also shows visible event, Grant and Deny counts plus the browser-local time of the last successful render.
 
+Use **Result filter** to show All results, Deny only or Grant only without stopping LIVE updates. Use **Sort** to keep the ordinary newest-first order or group Deny or Grant rows first. Each result group remains newest-first. The selected filter and sort survive widget refreshes, and CSV Export includes only rows visible under the current filter.
+
 ## Fault isolation
 
 If the widget cannot locate the NPS item, edit the widget and explicitly select a log item. A broader Security-log item is supported; the controller still filters the History API query to 6272/6273.

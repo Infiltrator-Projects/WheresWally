@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.13 — 2026-09-09
+
+- Restored a dedicated Result filter with All results, Deny only and Grant only choices.
+- Restored explicit result ordering with Newest first, Deny first and Grant first choices.
+- Kept Deny/Grant filtering and sorting active across one-second live refreshes without turning the widget into historical SEARCH mode.
+- Kept each event adjacent to its expandable Details row while sorting, with newest-first ordering inside Deny and Grant groups.
+- Made visible counters and CSV export follow the filtered result set.
+- Added client regression coverage for Deny-first, Grant-first and newest-first ordering.
+
 ## 1.1.12 — 2026-09-04
 
 - Reworked live AP correlation so each refresh uses at most one batched interface-IP lookup and one batched host-inventory scan instead of repeated per-BSSID searches.
