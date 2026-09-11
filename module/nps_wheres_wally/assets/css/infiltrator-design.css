@@ -1,0 +1,54 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/*
+ * Infiltrator Design v1 adapter.
+ * MBLINK is the visual reference; WHERE'S WALLY retains its operational
+ * Grant/Deny/LIVE colours while sharing typography and graphite structure.
+ */
+.nps-wally {
+    --nps-bg: #050608;
+    --nps-panel: #101318;
+    --nps-panel-raised: #171b20;
+    --nps-toolbar: #0e1115;
+    --nps-line: #353a40;
+    --nps-line-strong: #4a525b;
+    --nps-text: #e8ecef;
+    --nps-text-strong: #eef1f3;
+    --nps-muted: #aeb6bd;
+    --nps-radius: 6px;
+    font-family: "MB Corpo S Title WEB", sans-serif;
+    font-weight: 400;
+}
+
+.nps-wally button,
+.nps-wally input,
+.nps-wally select,
+.nps-wally textarea,
+.nps-wally-table,
+.nps-wally-table th,
+.nps-wally-table td {
+    font-family: "MB Corpo S Title WEB", sans-serif;
+}
+
+.nps-wally-title {
+    font-family: "MB Corpo A Title Cond WEB", "MB Corpo S Title WEB", sans-serif;
+    font-weight: 400;
+    letter-spacing: .045em;
+}
+
+.nps-wally-subtitle,
+.nps-wally-field-label,
+.nps-wally-mode,
+.nps-wally-button,
+.nps-wally-details-button,
+.nps-wally-table th {
+    font-weight: 700;
+}
+
+.nps-wally-toolbar,
+.nps-wally-table th {
+    background-color: #0e1115;
+}
+
+.nps-wally-event-row:nth-child(4n+1) td {
+    background: rgba(23, 27, 32, .52);
+}
