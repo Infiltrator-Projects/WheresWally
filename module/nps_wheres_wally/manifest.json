@@ -21,7 +21,8 @@
   },
   "assets": {
     "css": [
-      "widget.css"
+      "widget.css",
+      "infiltrator-design.css"
     ],
     "js": [
       "class.widget.js"
